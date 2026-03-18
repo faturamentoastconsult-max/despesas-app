@@ -1,0 +1,2023 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestão de Despesas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+/* Veja instruções de configuração no final do arquivo */
+
+:root {
+  --blue:      #1A56DB;
+  --blue-dark: #1341A8;
+  --blue-light:#EEF3FF;
+  --green:     #057A55;
+  --green-bg:  #DEF7EC;
+  --amber:     #92400E;
+  --amber-bg:  #FEF3C7;
+  --red:       #9B1C1C;
+  --red-bg:    #FDE8E8;
+  --gray-50:   #F9FAFB;
+  --gray-100:  #F3F4F6;
+  --gray-200:  #E5E7EB;
+  --gray-300:  #D1D5DB;
+  --gray-400:  #9CA3AF;
+  --gray-500:  #6B7280;
+  --gray-700:  #374151;
+  --gray-900:  #111827;
+  --white:     #FFFFFF;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.05);
+  --shadow:    0 1px 3px rgba(0,0,0,.1), 0 1px 2px rgba(0,0,0,.06);
+  --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
+  --radius-sm: 6px;
+  --radius:    10px;
+  --radius-lg: 14px;
+  --font: 'DM Sans', sans-serif;
+  --mono: 'DM Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; }
+body {
+  font-family: var(--font);
+  background: var(--gray-100);
+  color: var(--gray-900);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── LAYOUT ── */
+.app-shell { display: flex; flex-direction: column; min-height: 100vh; }
+.topbar {
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-200);
+  padding: 0 1.5rem;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--gray-900);
+}
+.brand-icon {
+  width: 32px; height: 32px;
+  background: var(--blue);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+}
+.topbar-user {
+  display: flex; align-items: center; gap: 10px;
+}
+.user-chip {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--gray-500);
+}
+.avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--blue-light);
+  color: var(--blue);
+  font-size: 11px; font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.avatar-lg { width: 40px; height: 40px; font-size: 14px; }
+
+.main { flex: 1; padding: 1.5rem; max-width: 960px; margin: 0 auto; width: 100%; }
+
+/* ── SCREEN ROUTER ── */
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-sm);
+}
+.card-title {
+  font-size: 14px; font-weight: 600; color: var(--gray-900);
+  margin-bottom: 1rem;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.card-subtitle { font-size: 12px; font-weight: 400; color: var(--gray-500); }
+
+/* ── METRICS ── */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 1rem;
+}
+.metric-card {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+.metric-label { font-size: 11px; color: var(--gray-500); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+.metric-value { font-size: 22px; font-weight: 600; color: var(--gray-900); font-family: var(--mono); }
+.metric-value.green { color: var(--green); }
+.metric-value.red   { color: #C81E1E; }
+.metric-value.amber { color: #92400E; }
+
+/* ── PROGRESS ── */
+.progress-wrap { margin-top: 10px; }
+.progress-track { background: var(--gray-200); border-radius: 99px; height: 6px; overflow: hidden; }
+.progress-fill  { height: 100%; border-radius: 99px; transition: width .4s ease; background: var(--blue); }
+.progress-fill.warn { background: #D97706; }
+.progress-fill.danger { background: #C81E1E; }
+.progress-label { font-size: 11px; color: var(--gray-500); margin-top: 4px; }
+
+/* ── TABS ── */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--gray-200); margin-bottom: 1.25rem; }
+.tab {
+  padding: 8px 14px; font-size: 13px; font-weight: 500;
+  color: var(--gray-500); cursor: pointer; border-bottom: 2px solid transparent;
+  margin-bottom: -1px; border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  transition: color .15s, border-color .15s;
+}
+.tab:hover { color: var(--gray-700); }
+.tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 500; font-family: var(--font);
+  cursor: pointer; border: 1px solid transparent;
+  transition: background .15s, border-color .15s, opacity .15s;
+  white-space: nowrap;
+}
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+.btn-primary:hover { background: var(--blue-dark); border-color: var(--blue-dark); }
+.btn-secondary { background: var(--white); color: var(--gray-700); border-color: var(--gray-300); }
+.btn-secondary:hover { background: var(--gray-50); }
+.btn-success { background: var(--green-bg); color: var(--green); border-color: #A7F3D0; }
+.btn-success:hover { background: #A7F3D0; }
+.btn-danger  { background: var(--red-bg); color: var(--red); border-color: #FCA5A5; }
+.btn-danger:hover  { background: #FCA5A5; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.btn-full { width: 100%; justify-content: center; }
+.btn-icon { width: 30px; height: 30px; padding: 0; justify-content: center; border-radius: var(--radius-sm); }
+
+/* ── FORM ── */
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 12px; font-weight: 500; color: var(--gray-700); display: block; margin-bottom: 5px; }
+.form-control {
+  width: 100%; padding: 8px 12px;
+  border: 1px solid var(--gray-300); border-radius: var(--radius-sm);
+  font-size: 13px; font-family: var(--font); color: var(--gray-900);
+  background: var(--white);
+  transition: border-color .15s, box-shadow .15s;
+}
+.form-control:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(26,86,219,.12); }
+textarea.form-control { resize: vertical; min-height: 72px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media(max-width:500px){ .form-grid { grid-template-columns: 1fr; } }
+
+/* ── FILE UPLOAD ── */
+.file-drop {
+  border: 1.5px dashed var(--gray-300); border-radius: var(--radius);
+  padding: 1.5rem; text-align: center; cursor: pointer;
+  background: var(--gray-50); transition: border-color .15s, background .15s;
+  font-size: 12px; color: var(--gray-500);
+}
+.file-drop:hover { border-color: var(--blue); background: var(--blue-light); }
+.file-drop img { max-height: 100px; border-radius: var(--radius-sm); margin-bottom: 6px; }
+
+/* ── TABLE ── */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th {
+  text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .4px; color: var(--gray-500); padding: 8px 12px;
+  border-bottom: 1px solid var(--gray-200); white-space: nowrap;
+}
+tbody td { padding: 11px 12px; border-bottom: 1px solid var(--gray-100); color: var(--gray-700); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--gray-50); }
+
+/* ── BADGES ── */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 600; padding: 2px 8px;
+  border-radius: 99px;
+}
+.badge-success { background: var(--green-bg); color: var(--green); }
+.badge-warning { background: var(--amber-bg); color: var(--amber); }
+.badge-danger  { background: var(--red-bg);   color: var(--red); }
+.badge-info    { background: var(--blue-light); color: var(--blue); }
+
+/* ── ALERT ── */
+.alert {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 14px; border-radius: var(--radius);
+  font-size: 13px; margin-bottom: 10px; border-left: 3px solid;
+}
+.alert-warn { background: var(--amber-bg); border-color: #D97706; color: var(--amber); }
+.alert-info { background: var(--blue-light); border-color: var(--blue); color: var(--blue-dark); }
+.alert-success { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+
+/* ── LOGIN ── */
+.login-wrap {
+  min-height: 100vh; display: flex; align-items: center;
+  justify-content: center; background: var(--gray-100); padding: 1rem;
+}
+.login-box {
+  background: var(--white); border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg); padding: 2rem;
+  width: 100%; max-width: 380px; box-shadow: var(--shadow-md);
+}
+.login-logo {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 10px; margin-bottom: 1.75rem;
+}
+.login-logo-icon {
+  width: 52px; height: 52px; background: var(--blue);
+  border-radius: var(--radius); display: flex; align-items: center; justify-content: center;
+}
+.login-title { font-size: 19px; font-weight: 600; }
+.login-sub   { font-size: 13px; color: var(--gray-500); text-align: center; }
+
+/* ── MODAL ── */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(17,24,39,.45);
+  display: none; align-items: center; justify-content: center;
+  z-index: 200; padding: 1rem;
+}
+.modal-backdrop.open { display: flex; }
+.modal-box {
+  background: var(--white); border-radius: var(--radius-lg);
+  padding: 1.5rem; width: 100%; max-width: 460px;
+  border: 1px solid var(--gray-200); box-shadow: var(--shadow-md);
+  max-height: 90vh; overflow-y: auto;
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+.modal-title { font-size: 15px; font-weight: 600; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 1.25rem; }
+
+/* ── EMPTY ── */
+.empty-state {
+  text-align: center; padding: 2.5rem 1rem;
+  color: var(--gray-500); font-size: 13px;
+}
+.empty-icon { font-size: 28px; margin-bottom: 8px; opacity: .4; }
+
+/* ── DIVIDER ── */
+.divider { border: none; border-top: 1px solid var(--gray-200); margin: 1rem 0; }
+
+/* ── SPINNER ── */
+.spinner {
+  width: 18px; height: 18px; border: 2px solid var(--gray-200);
+  border-top-color: var(--blue); border-radius: 50%;
+  animation: spin .6s linear infinite; display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── TOAST ── */
+#toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--gray-900); color: #fff; padding: 10px 20px;
+  border-radius: var(--radius); font-size: 13px;
+  z-index: 999; pointer-events: none;
+  opacity: 0; transition: opacity .25s;
+}
+#toast.show { opacity: 1; }
+
+/* ── SYNC BANNER ── */
+#sync-banner {
+  background: var(--blue-light); border-bottom: 1px solid #C3DDFD;
+  padding: 8px 1.5rem; font-size: 12px; color: var(--blue-dark);
+  display: flex; align-items: center; gap: 8px;
+  display: none;
+}
+
+/* ── RESPONSIVE ── */
+@media(max-width:600px){
+  .topbar { padding: 0 1rem; }
+  .main { padding: 1rem; }
+  .card { padding: 1rem; }
+  .hide-mobile { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     TELA DE LOGIN
+══════════════════════════════════════════ -->
+<div id="s-login" class="screen active">
+  <div class="login-wrap">
+    <div class="login-box">
+      <div class="login-logo">
+        <div class="login-logo-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+            <rect x="2" y="5" width="20" height="14" rx="2" stroke="white" stroke-width="1.6"/>
+            <path d="M2 9h20" stroke="white" stroke-width="1.6"/>
+            <circle cx="6.5" cy="14" r="1.5" fill="white"/>
+            <path d="M10 14h6" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="login-title">Gestão de Despesas</div>
+          <div class="login-sub">Acesse com suas credenciais</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">E-mail ou usuário</label>
+        <input class="form-control" id="l-user" type="text" placeholder="seu@email.com" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Senha</label>
+        <input class="form-control" id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <div id="l-error" style="font-size:12px;color:#C81E1E;margin-bottom:10px;display:none"></div>
+      <button class="btn btn-primary btn-full" id="l-btn" onclick="doLogin()">Entrar</button>
+
+      <hr class="divider">
+      <div style="font-size:11px;color:var(--gray-400);text-align:center;line-height:1.6">
+        Problemas de acesso? Fale com o gestor responsável.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SHELL (TOPBAR + MAIN)
+══════════════════════════════════════════ -->
+<div id="s-app" class="screen">
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="topbar-brand">
+        <div class="brand-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <rect x="2" y="5" width="20" height="14" rx="2" stroke="white" stroke-width="1.6"/>
+            <path d="M2 9h20" stroke="white" stroke-width="1.6"/>
+            <circle cx="6.5" cy="14" r="1.5" fill="white"/>
+            <path d="M10 14h6" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </div>
+        Gestão de Despesas
+      </div>
+      <div class="topbar-user">
+        <div class="user-chip">
+          <div class="avatar" id="top-avatar">--</div>
+          <span id="top-name" class="hide-mobile"></span>
+          <span id="top-role-badge" class="badge badge-info" style="font-size:10px"></span>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="doLogout()">Sair</button>
+      </div>
+    </header>
+    <div id="sync-banner">
+      <div class="spinner" style="width:14px;height:14px;border-width:2px"></div>
+      <span id="sync-msg">Sincronizando com Google Sheets...</span>
+    </div>
+    <main class="main" id="main-content"></main>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL GENÉRICO
+══════════════════════════════════════════ -->
+<div class="modal-backdrop" id="modal" onclick="modalClickOutside(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Detalhes</div>
+      <button class="btn btn-icon btn-secondary" onclick="closeModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- ══════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════ -->
+<script>
+/*
+   CONFIGURACAO - EDITE APENAS ESTA SECAO
+
+   PASSO 1: Crie uma planilha no Google Sheets com 3 abas:
+     - "Usuarios" : colunas: usuario | senha | nome | perfil (gestor/colab) | ativo (sim/nao)
+     - "Recibos"  : colunas: id | colabEmail | colabNome | categoria | valor | data | local | descricao | status | fotoUrl
+     - "Saldos"   : colunas: email | nome | saldoLiberado | gastoAprovado
+
+   PASSO 2: Crie o Apps Script, implante como Web App e copie a URL
+
+   PASSO 3: Cole a URL abaixo em SHEETS_URL
+*/
+
+const CONFIG = {
+
+  // COLE AQUI A URL DO SEU APPS SCRIPT WEB APP
+  // Ex: "https://script.google.com/macros/s/XXXXXX/exec"
+  SHEETS_URL: "https://script.google.com/macros/s/AKfycbwwWC5BDVIPW2irAw75Zqepoxh4NxvypSm-oYSafqsqMNXXq9PaA4Q7RouXOhy3bBOv/exec",
+
+  // Nome da empresa (aparece no topo)
+  EMPRESA: "Minha Empresa",
+
+  // Categorias de despesa disponiveis
+  CATEGORIAS: [
+    "Transporte", "Alimentacao", "Hospedagem",
+    "Combustivel", "Pedagio", "Material", "Outros"
+  ],
+
+  // Percentual do saldo que dispara alerta (ex: 0.85 = 85% usado)
+  ALERTA_SALDO_PCT: 0.85
+};
+
+
+const DEMO = {
+  usuarios: [
+    { usuario:"gestor@empresa.com", senha:"admin123", nome:"Ana Lima",      perfil:"gestor", ativo:"sim" },
+    { usuario:"carlos@empresa.com", senha:"carlos123", nome:"Carlos Souza", perfil:"colab",  ativo:"sim" },
+    { usuario:"fernanda@empresa.com",senha:"fer123",   nome:"Fernanda Reis",perfil:"colab",  ativo:"sim" },
+    { usuario:"joao@empresa.com",   senha:"joao123",   nome:"João Almeida", perfil:"colab",  ativo:"sim" },
+    { usuario:"patricia@empresa.com",senha:"pat123",   nome:"Patrícia Nunes",perfil:"colab", ativo:"sim" },
+  ],
+  saldos: [
+    { email:"carlos@empresa.com",   nome:"Carlos Souza",  saldoLiberado:800, gastoAprovado:320 },
+    { email:"fernanda@empresa.com", nome:"Fernanda Reis",  saldoLiberado:500, gastoAprovado:450 },
+    { email:"joao@empresa.com",     nome:"João Almeida",   saldoLiberado:600, gastoAprovado:50  },
+    { email:"patricia@empresa.com", nome:"Patrícia Nunes", saldoLiberado:300, gastoAprovado:290 },
+  ],
+  recibos: [
+    { id:"R001", colabEmail:"carlos@empresa.com",   colabNome:"Carlos Souza",  categoria:"Transporte",  valor:120, data:"2026-03-10", local:"São Paulo - SP",  descricao:"Uber para visita", status:"aprovado",  fotoUrl:"" },
+    { id:"R002", colabEmail:"carlos@empresa.com",   colabNome:"Carlos Souza",  categoria:"Alimentação", valor:85,  data:"2026-03-11", local:"Campinas - SP",   descricao:"Almoço visita",    status:"pendente",  fotoUrl:"" },
+    { id:"R003", colabEmail:"fernanda@empresa.com", colabNome:"Fernanda Reis", categoria:"Combustível", valor:200, data:"2026-03-08", local:"Santos - SP",     descricao:"Abastecimento",    status:"aprovado",  fotoUrl:"" },
+    { id:"R004", colabEmail:"fernanda@empresa.com", colabNome:"Fernanda Reis", categoria:"Pedágio",     valor:45,  data:"2026-03-08", local:"Santos - SP",     descricao:"Pedágio Anchieta", status:"aprovado",  fotoUrl:"" },
+    { id:"R005", colabEmail:"fernanda@empresa.com", colabNome:"Fernanda Reis", categoria:"Alimentação", valor:95,  data:"2026-03-12", local:"Guarujá - SP",    descricao:"Jantar cliente",   status:"reprovado", fotoUrl:"" },
+    { id:"R006", colabEmail:"joao@empresa.com",     colabNome:"João Almeida",  categoria:"Transporte",  valor:50,  data:"2026-03-15", local:"São Paulo - SP",  descricao:"Metrô + ônibus",   status:"pendente",  fotoUrl:"" },
+    { id:"R007", colabEmail:"patricia@empresa.com", colabNome:"Patrícia Nunes",categoria:"Hospedagem",  valor:180, data:"2026-03-09", local:"Sorocaba - SP",   descricao:"Hotel uma noite",  status:"aprovado",  fotoUrl:"" },
+    { id:"R008", colabEmail:"patricia@empresa.com", colabNome:"Patrícia Nunes",categoria:"Alimentação", valor:75,  data:"2026-03-10", local:"Sorocaba - SP",   descricao:"Refeições",        status:"pendente",  fotoUrl:"" },
+  ],
+};
+
+
+let ST = {
+  user: null,
+  usuarios: [],
+  saldos: [],
+  recibos: [],
+  historico: [],
+  demoMode: !CONFIG.SHEETS_URL,
+  imgData: null,
+  imgFile: null,
+};
+
+
+async function sheetsCall(action, payload={}) {
+  if (ST.demoMode) return demoAction(action, payload);
+  showSync("Sincronizando...");
+  return new Promise((resolve) => {
+    const cbName = "cb_" + Date.now() + "_" + Math.floor(Math.random()*10000);
+    const params = new URLSearchParams({ action, data: JSON.stringify(payload), callback: cbName });
+    const url = CONFIG.SHEETS_URL + "?" + params.toString();
+    const script = document.createElement("script");
+    let done = false;
+
+    const cleanup = () => {
+      if(done) return;
+      done = true;
+      hideSync();
+      delete window[cbName];
+      if(script.parentNode) script.parentNode.removeChild(script);
+    };
+
+    window[cbName] = (data) => {
+      cleanup();
+      resolve(data);
+    };
+
+    script.onerror = () => {
+      cleanup();
+      toast("Erro ao conectar com Google Sheets. Verifique a URL.");
+      resolve({ ok: false });
+    };
+
+    // timeout de 15 segundos
+    setTimeout(() => {
+      if(!done) {
+        cleanup();
+        toast("Tempo esgotado. Verifique sua conexao.");
+        resolve({ ok: false });
+      }
+    }, 15000);
+
+    script.src = url;
+    document.body.appendChild(script);
+  });
+}
+
+function demoAction(action, payload) {
+  switch(action) {
+    case "getUsuarios":  return { ok:true, data: DEMO.usuarios.map(x=>({...x})) };
+    case "getSaldos":    return { ok:true, data: DEMO.saldos.map(x=>({...x})) };
+    case "getRecibos":   return { ok:true, data: DEMO.recibos.map(x=>({...x})) };
+    case "addRecibo": {
+      const r = { ...payload.recibo, id: "R"+Date.now(), status:"pendente" };
+      DEMO.recibos.push(r);
+      ST.recibos.push(r);
+      return { ok:true };
+    }
+    case "updateStatus": {
+      const r = DEMO.recibos.find(x=>x.id===payload.id);
+      if(r){
+        r.status = payload.status;
+        const sr = ST.recibos.find(x=>x.id===payload.id);
+        if(sr) sr.status = payload.status;
+        if(payload.status==="aprovado"){
+          const s = DEMO.saldos.find(x=>x.email===r.colabEmail);
+          if(s) s.gastoAprovado += r.valor;
+          const ss = ST.saldos.find(x=>x.email===r.colabEmail);
+          if(ss) ss.gastoAprovado += r.valor;
+        }
+      }
+      return { ok:true };
+    }
+    case "liberarSaldo": {
+      const s = DEMO.saldos.find(x=>x.email===payload.email);
+      if(s){ s.saldoLiberado += payload.valor; }
+      const ss = ST.saldos.find(x=>x.email===payload.email);
+      if(ss){ ss.saldoLiberado += payload.valor; }
+      return { ok:true };
+    }
+    case "addUsuario": {
+      DEMO.usuarios.push(payload.usuario);
+      ST.usuarios.push(payload.usuario);
+      if(payload.usuario.perfil==="colab"){
+        const ns = { email:payload.usuario.usuario, nome:payload.usuario.nome, saldoLiberado:0, gastoAprovado:0 };
+        DEMO.saldos.push(ns);
+        ST.saldos.push(ns);
+      }
+      return { ok:true };
+    }
+    case "toggleUsuario": {
+      const u = DEMO.usuarios.find(x=>x.usuario===payload.usuario);
+      if(u) u.ativo = u.ativo==="sim"?"nao":"sim";
+      const su = ST.usuarios.find(x=>x.usuario===payload.usuario);
+      if(su) su.ativo = su.ativo==="sim"?"nao":"sim";
+      return { ok:true };
+    }
+    default: return { ok:false, error:"Ação desconhecida" };
+  }
+}
+
+
+async function doLogin() {
+  const user = document.getElementById("l-user").value.trim().toLowerCase();
+  const pass = document.getElementById("l-pass").value;
+  const btn  = document.getElementById("l-btn");
+  const err  = document.getElementById("l-error");
+  err.style.display = "none";
+  btn.disabled = true;
+  btn.innerHTML = `<div class="spinner"></div> Verificando...`;
+
+  const res = await sheetsCall("getUsuarios");
+  btn.disabled = false;
+  btn.textContent = "Entrar";
+
+  if (!res.ok) { err.textContent = "Erro ao conectar. Tente novamente."; err.style.display="block"; return; }
+  ST.usuarios = res.data;
+
+  const found = ST.usuarios.find(u =>
+    u.usuario.toLowerCase() === user && u.senha === pass && u.ativo === "sim"
+  );
+  if (found && found.perfil !== "gestor") found.perfil = "colab";
+  if (!found) { err.textContent = "Usuário ou senha incorretos."; err.style.display="block"; return; }
+
+  ST.user = found;
+  localStorage.setItem("despesas_user", JSON.stringify(found));
+
+  // load data
+  const [sr, ss] = await Promise.all([ sheetsCall("getRecibos"), sheetsCall("getSaldos") ]);
+  ST.recibos = sr.data || [];
+  ST.saldos  = ss.data || [];
+
+  initApp();
+}
+
+function doLogout() {
+  ST.user = null;
+  localStorage.removeItem("despesas_user");
+  showScreen("s-login");
+}
+
+
+function initApp() {
+  const u = ST.user;
+  document.getElementById("top-avatar").textContent = initials(u.nome);
+  document.getElementById("top-name").textContent   = u.nome;
+  document.getElementById("top-role-badge").textContent = u.perfil === "gestor" ? "Gestor" : "Colaborador";
+  if (ST.demoMode) {
+    document.getElementById("sync-banner").style.display = "flex";
+    document.getElementById("sync-msg").textContent = "Modo demo ativo - configure SHEETS_URL para usar dados reais.";
+    document.getElementById("sync-banner").style.background = "#FEF3C7";
+    document.getElementById("sync-banner").style.borderColor = "#D97706";
+    document.getElementById("sync-banner").style.color = "#92400E";
+  }
+  showScreen("s-app");
+  if (u.perfil === "gestor") renderGestor(); else renderColab();
+  // normaliza perfil
+  if (u.perfil !== "gestor") u.perfil = "colab";
+}
+
+
+function renderGestor() {
+  const pendentes = ST.recibos.filter(r => r.status === "pendente");
+  const aprovTotal = ST.recibos.filter(r => r.status === "aprovado").reduce((a,r) => a + Number(r.valor), 0);
+  const saldoTotal = ST.saldos.reduce((a, s) => a + Number(s.saldoLiberado), 0);
+  const alertas    = ST.saldos.filter(s => {
+    const pct = Number(s.saldoLiberado) > 0
+      ? Number(s.gastoAprovado) / Number(s.saldoLiberado)
+      : 0;
+    return pct >= CONFIG.ALERTA_SALDO_PCT;
+  });
+
+  const html = `
+    ${alertas.map(s => `
+      <div class="alert alert-warn">
+        (!) <strong>${s.nome}</strong> atingiu ${Math.round(Number(s.gastoAprovado)/Number(s.saldoLiberado)*100)}% do saldo liberado
+        (disponível: R$ ${(Number(s.saldoLiberado)-Number(s.gastoAprovado)).toFixed(2)})
+      </div>
+    `).join("")}
+
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Saldo liberado total</div>
+        <div class="metric-value">R$ ${fmtMoney(saldoTotal)}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Aprovado total</div>
+        <div class="metric-value green">R$ ${fmtMoney(aprovTotal)}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Pendentes</div>
+        <div class="metric-value ${pendentes.length > 0 ? "amber" : ""}">${pendentes.length}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Colaboradores</div>
+        <div class="metric-value">${ST.saldos.length}</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="gTab(this,'gt-pendentes')">Pendentes (${pendentes.length})</div>
+      <div class="tab" onclick="gTab(this,'gt-colaboradores')">Colaboradores</div>
+      <div class="tab" onclick="gTab(this,'gt-todos')">Todos os recibos</div>
+      <div class="tab" onclick="gTab(this,'gt-usuarios')">Usuários</div>
+      <div class="tab" onclick="gTab(this,'gt-relatorio')">Relatório</div>
+    </div>
+
+    <!-- PENDENTES -->
+    <div id="gt-pendentes">
+      ${pendentes.length === 0
+        ? `<div class="empty-state"><div class="empty-icon">OK</div>Nenhum recibo aguardando aprovação</div>`
+        : pendentes.map(r => `
+          <div class="card" style="padding:1rem 1.25rem">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+              <div style="display:flex;align-items:center;gap:10px">
+                <div class="avatar avatar-lg">${initials(r.colabNome)}</div>
+                <div>
+                  <div style="font-size:13px;font-weight:600">${r.colabNome}</div>
+                  <div style="font-size:12px;color:var(--gray-500)">${r.categoria} - ${r.local} - ${fmtDate(r.data)}</div>
+                  ${r.descricao ? `<div style="font-size:12px;color:var(--gray-400);margin-top:1px">${r.descricao}</div>` : ""}
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <span style="font-size:15px;font-weight:700;font-family:var(--mono)">R$ ${fmtMoney(r.valor)}</span>
+                <button class="btn btn-success btn-sm" onclick="aprovarRecibo('${r.id}')">OK Aprovar</button>
+                <button class="btn btn-danger btn-sm"  onclick="reprovarRecibo('${r.id}')">X Reprovar</button>
+                <button class="btn btn-secondary btn-sm" onclick="verRecibo('${r.id}')">Ver</button>
+              </div>
+            </div>
+          </div>
+        `).join("")
+      }
+    </div>
+
+    <!-- COLABORADORES -->
+    <div id="gt-colaboradores" style="display:none">
+      <div class="card">
+        <div class="card-title">
+          Saldo por colaborador
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Colaborador</th><th>Liberado</th><th>Aprovado</th><th>Disponível</th><th>Uso</th><th></th>
+            </tr></thead>
+            <tbody>
+              ${ST.saldos.map(s => {
+                const disp = Number(s.saldoLiberado) - Number(s.gastoAprovado);
+                const pct  = Number(s.saldoLiberado) > 0
+                  ? Math.min(100, Math.round(Number(s.gastoAprovado) / Number(s.saldoLiberado) * 100))
+                  : 0;
+                const cls  = pct >= 90 ? "danger" : pct >= 70 ? "warn" : "";
+                return `<tr>
+                  <td><div style="display:flex;align-items:center;gap:8px"><div class="avatar">${initials(s.nome)}</div>${s.nome}</div></td>
+                  <td style="font-family:var(--mono)">R$ ${fmtMoney(s.saldoLiberado)}</td>
+                  <td style="font-family:var(--mono)">R$ ${fmtMoney(s.gastoAprovado)}</td>
+                  <td style="font-family:var(--mono);font-weight:600;color:${disp<=0?"#C81E1E":disp<=50?"#D97706":"var(--green)"}">R$ ${fmtMoney(disp)}</td>
+                  <td style="min-width:120px">
+                    <div style="font-size:11px;color:var(--gray-500);margin-bottom:3px">${pct}%</div>
+                    <div class="progress-track"><div class="progress-fill ${cls}" style="width:${pct}%"></div></div>
+                  </td>
+                  <td style="display:flex;gap:6px">
+                    <button class="btn btn-secondary btn-sm" onclick="verExtrato('${s.email}')">Extrato</button>
+                    <button class="btn btn-primary btn-sm" onclick="openLiberarSaldo('${s.email}','${s.nome}')">Liberar saldo</button>
+                  </td>
+                </tr>`;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TODOS OS RECIBOS -->
+    <div id="gt-todos" style="display:none">
+      <div class="card" style="margin-bottom:1rem">
+        <div class="card-title">Filtros</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px">
+          <div>
+            <label class="form-label">Colaborador</label>
+            <select class="form-control" id="f-colab" onchange="aplicarFiltros()">
+              <option value="">Todos</option>
+              ${ST.saldos.map(s => `<option value="${s.email}">${s.nome}</option>`).join("")}
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Status</label>
+            <select class="form-control" id="f-status" onchange="aplicarFiltros()">
+              <option value="">Todos</option>
+              <option value="pendente">Pendente</option>
+              <option value="aprovado">Aprovado</option>
+              <option value="reprovado">Reprovado</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Categoria</label>
+            <select class="form-control" id="f-cat" onchange="aplicarFiltros()">
+              <option value="">Todas</option>
+              ${CONFIG.CATEGORIAS.map(c => `<option value="${c}">${c}</option>`).join("")}
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Data inicial</label>
+            <input class="form-control" type="date" id="f-data-ini" onchange="aplicarFiltros()">
+          </div>
+          <div>
+            <label class="form-label">Data final</label>
+            <input class="form-control" type="date" id="f-data-fim" onchange="aplicarFiltros()">
+          </div>
+        </div>
+        <div style="margin-top:12px;display:flex;align-items:center;gap:10px">
+          <button class="btn btn-secondary btn-sm" onclick="limparFiltros()">Limpar filtros</button>
+          <span id="f-count" style="font-size:12px;color:var(--gray-500)"></span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Colaborador</th><th>Categoria</th><th>Data</th><th class="hide-mobile">Local</th>
+              <th>Valor</th><th>Status</th><th></th>
+            </tr></thead>
+            <tbody id="f-tbody"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--gray-200);display:flex;gap:16px;font-size:13px">
+          <span style="color:var(--gray-500)">Total filtrado:</span>
+          <span style="font-weight:600;font-family:var(--mono)" id="f-total">R$ 0,00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- USUÁRIOS -->
+    <div id="gt-usuarios" style="display:none">
+      <div class="card" style="margin-bottom:1rem">
+        <div class="card-title">
+          Usuários cadastrados
+          <button class="btn btn-primary btn-sm" onclick="openNovoUsuario()">+ Novo usuário</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Nome</th><th>Usuário / E-mail</th><th>Perfil</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              ${ST.usuarios.map(u => `<tr>
+                <td><div style="display:flex;align-items:center;gap:8px"><div class="avatar">${initials(u.nome)}</div>${u.nome}</div></td>
+                <td style="font-family:var(--mono);font-size:12px">${u.usuario}</td>
+                <td><span class="badge ${u.perfil==="gestor"?"badge-info":"badge-success"}">${u.perfil==="gestor"?"Gestor":"Colaborador"}</span></td>
+                <td><span class="badge ${u.ativo==="sim"?"badge-success":"badge-danger"}">${u.ativo==="sim"?"Ativo":"Inativo"}</span></td>
+                <td><button class="btn btn-secondary btn-sm" onclick="toggleUsuario('${u.usuario}')">${u.ativo==="sim"?"Desativar":"Ativar"}</button></td>
+              </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="alert alert-info">
+        (i) As senhas são definidas ao criar o usuário. Para redefinir, desative e recrie o usuário,
+        ou edite diretamente na aba <strong>Usuarios</strong> do Google Sheets.
+      </div>
+    </div>
+
+    <!-- RELATÓRIO -->
+    <div id="gt-relatorio" style="display:none">
+      <div class="card" style="margin-bottom:1rem">
+        <div class="card-title">Resumo por colaborador</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Colaborador</th><th>Liberado</th><th>Aprovado</th><th>Pendente</th><th>Reprovado</th><th>Disponível</th></tr></thead>
+            <tbody>
+              ${ST.saldos.map(s => {
+                const pend = ST.recibos.filter(r=>r.colabEmail===s.email&&r.status==="pendente").reduce((a,r)=>a+Number(r.valor),0);
+                const reprov = ST.recibos.filter(r=>r.colabEmail===s.email&&r.status==="reprovado").reduce((a,r)=>a+Number(r.valor),0);
+                const disp = Number(s.saldoLiberado) - Number(s.gastoAprovado);
+                return `<tr>
+                  <td>${s.nome}</td>
+                  <td style="font-family:var(--mono)">R$ ${fmtMoney(s.saldoLiberado)}</td>
+                  <td style="font-family:var(--mono);color:var(--green)">R$ ${fmtMoney(s.gastoAprovado)}</td>
+                  <td style="font-family:var(--mono);color:#D97706">R$ ${fmtMoney(pend)}</td>
+                  <td style="font-family:var(--mono);color:#C81E1E">R$ ${fmtMoney(reprov)}</td>
+                  <td style="font-family:var(--mono);font-weight:600">R$ ${fmtMoney(disp)}</td>
+                </tr>`;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Exportar CSV</div>
+        <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px">Escolha um colaborador específico ou exporte todos de uma vez.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px">
+          <div>
+            <label class="form-label">Colaborador</label>
+            <select class="form-control" id="exp-colab">
+              <option value="">Todos os colaboradores</option>
+              ${ST.saldos.map(s => `<option value="${s.email}">${s.nome}</option>`).join("")}
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Status</label>
+            <select class="form-control" id="exp-status">
+              <option value="">Todos</option>
+              <option value="pendente">Pendente</option>
+              <option value="aprovado">Aprovado</option>
+              <option value="reprovado">Reprovado</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Data inicial</label>
+            <input class="form-control" type="date" id="exp-data-ini">
+          </div>
+          <div>
+            <label class="form-label">Data final</label>
+            <input class="form-control" type="date" id="exp-data-fim">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="exportCSV()">Baixar CSV</button>
+      </div>
+    </div>
+  `;
+  document.getElementById("main-content").innerHTML = html;
+}
+
+function gTab(el, tabId) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  el.classList.add("active");
+  ["gt-pendentes","gt-colaboradores","gt-todos","gt-usuarios","gt-relatorio"].forEach(t => {
+    const el2 = document.getElementById(t);
+    if(el2) el2.style.display = t === tabId ? "block" : "none";
+  });
+  if(tabId === "gt-todos") setTimeout(aplicarFiltros, 50);
+}
+
+function aplicarFiltros() {
+  const fColab  = (document.getElementById("f-colab")    || {}).value || "";
+  const fStatus = (document.getElementById("f-status")   || {}).value || "";
+  const fCat    = (document.getElementById("f-cat")      || {}).value || "";
+  const fIni    = (document.getElementById("f-data-ini") || {}).value || "";
+  const fFim    = (document.getElementById("f-data-fim") || {}).value || "";
+
+  let filtrados = ST.recibos.filter(r => {
+    if(fColab  && r.colabEmail !== fColab)   return false;
+    if(fStatus && r.status     !== fStatus)  return false;
+    if(fCat    && r.categoria  !== fCat)     return false;
+    if(fIni    && r.data < fIni)             return false;
+    if(fFim    && r.data > fFim)             return false;
+    return true;
+  });
+
+  const tbody = document.getElementById("f-tbody");
+  const countEl = document.getElementById("f-count");
+  const totalEl = document.getElementById("f-total");
+  if(!tbody) return;
+
+  if(filtrados.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">Nenhum recibo encontrado</div></td></tr>`;
+  } else {
+    tbody.innerHTML = filtrados.map(r => `<tr>
+      <td>${r.colabNome}</td>
+      <td><span class="badge badge-info">${r.categoria}</span></td>
+      <td>${fmtDate(r.data)}</td>
+      <td class="hide-mobile" style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.local}</td>
+      <td style="font-family:var(--mono);font-weight:600">R$ ${fmtMoney(r.valor)}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td>
+        ${r.status==="pendente" ? `
+          <button class="btn btn-success btn-sm" onclick="aprovarRecibo('${r.id}')">OK</button>
+          <button class="btn btn-danger btn-sm"  onclick="reprovarRecibo('${r.id}')">X</button>
+        ` : ""}
+        <button class="btn btn-secondary btn-sm" onclick="verRecibo('${r.id}')">Ver</button>
+      </td>
+    </tr>`).join("");
+  }
+
+  const total = filtrados.reduce((a,r) => a + Number(r.valor), 0);
+  if(countEl) countEl.textContent = filtrados.length + " recibo(s) encontrado(s)";
+  if(totalEl) totalEl.textContent = "R$ " + fmtMoney(total);
+}
+
+function limparFiltros() {
+  ["f-colab","f-status","f-cat","f-data-ini","f-data-fim"].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = "";
+  });
+  aplicarFiltros();
+}
+
+
+function renderColab() {
+  const u   = ST.user;
+  const sal = ST.saldos.find(s => s.email === u.usuario) || { saldoLiberado:0, gastoAprovado:0 };
+  const meus = ST.recibos.filter(r => r.colabEmail === u.usuario);
+  const disp = Number(sal.saldoLiberado) - Number(sal.gastoAprovado);
+  const pct  = Number(sal.saldoLiberado) > 0
+    ? Math.min(100, Math.round(Number(sal.gastoAprovado) / Number(sal.saldoLiberado) * 100))
+    : 0;
+  const cls  = pct >= 90 ? "danger" : pct >= 70 ? "warn" : "";
+  const hoje = new Date().toISOString().split("T")[0];
+  const cats = CONFIG.CATEGORIAS.map(c => `<option>${c}</option>`).join("");
+
+  const html = `
+    <div class="card">
+      <div id="c-metrics-box">
+        <div class="metrics-grid" style="margin-bottom:10px">
+          <div class="metric-card">
+            <div class="metric-label">Saldo liberado</div>
+            <div class="metric-value">R$ ${fmtMoney(sal.saldoLiberado)}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Gasto aprovado</div>
+            <div class="metric-value">R$ ${fmtMoney(sal.gastoAprovado)}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Disponivel</div>
+            <div class="metric-value ${disp<=0?"red":disp<=50?"amber":"green"}">R$ ${fmtMoney(disp)}</div>
+          </div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-track"><div class="progress-fill ${cls}" style="width:${pct}%"></div></div>
+          <div class="progress-label">${pct}% do saldo utilizado</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="cTab(this,'ct-novo')">Novo recibo</div>
+      <div class="tab" onclick="cTab(this,'ct-lista')">Meus recibos (${meus.length})</div>
+      <div class="tab" onclick="cTab(this,'ct-extrato')">Meu extrato</div>
+    </div>
+
+    <!-- NOVO RECIBO -->
+    <div id="ct-novo">
+      <div class="card">
+        <div class="card-title">Registrar despesa</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Categoria *</label>
+            <select class="form-control" id="c-cat">${cats}</select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Valor (R$) *</label>
+            <input class="form-control" id="c-valor" type="number" min="0" step="0.01" placeholder="0,00">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Data *</label>
+            <input class="form-control" id="c-data" type="date" value="${hoje}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Localização / Cidade *</label>
+            <input class="form-control" id="c-local" type="text" placeholder="Ex: São Paulo - SP">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Descrição</label>
+          <textarea class="form-control" id="c-desc" placeholder="Descreva a despesa..."></textarea>
+        </div>
+
+        <button class="btn btn-primary btn-full" id="c-submit" onclick="enviarRecibo()">Enviar para aprovação</button>
+      </div>
+    </div>
+
+    <!-- LISTA -->
+    <div id="ct-lista" style="display:none">
+      <div class="card" style="margin-bottom:1rem">
+        <div class="card-title">Filtrar recibos</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+          <div>
+            <label class="form-label">Status</label>
+            <select class="form-control" id="cl-status" onchange="filtrarMeusRecibos()">
+              <option value="">Todos</option>
+              <option value="pendente">Pendente</option>
+              <option value="aprovado">Aprovado</option>
+              <option value="reprovado">Reprovado</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Categoria</label>
+            <select class="form-control" id="cl-cat" onchange="filtrarMeusRecibos()">
+              <option value="">Todas</option>
+              ${CONFIG.CATEGORIAS.map(c => `<option value="${c}">${c}</option>`).join("")}
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Data inicial</label>
+            <input class="form-control" type="date" id="cl-ini" onchange="filtrarMeusRecibos()">
+          </div>
+          <div>
+            <label class="form-label">Data final</label>
+            <input class="form-control" type="date" id="cl-fim" onchange="filtrarMeusRecibos()">
+          </div>
+        </div>
+        <div style="margin-top:10px;display:flex;align-items:center;gap:10px">
+          <button class="btn btn-secondary btn-sm" onclick="limparFiltrosColab()">Limpar</button>
+          <span id="cl-count" style="font-size:12px;color:var(--gray-500)"></span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Categoria</th><th>Data</th><th>Valor</th><th class="hide-mobile">Local</th><th>Status</th><th></th></tr></thead>
+            <tbody id="cl-tbody"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--gray-200);display:flex;gap:16px;font-size:13px;flex-wrap:wrap">
+          <span style="color:var(--gray-500)">Total filtrado:</span>
+          <span style="font-weight:600;font-family:var(--mono)" id="cl-total">R$ 0,00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEU EXTRATO -->
+    <div id="ct-extrato" style="display:none">
+      <div class="card" style="margin-bottom:1rem">
+        <div class="card-title">Filtrar periodo</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+          <div>
+            <label class="form-label">Status</label>
+            <select class="form-control" id="ce-status" onchange="renderMeuExtrato()">
+              <option value="">Todos</option>
+              <option value="aprovado">Aprovado</option>
+              <option value="pendente">Pendente</option>
+              <option value="reprovado">Reprovado</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Data inicial</label>
+            <input class="form-control" type="date" id="ce-ini" onchange="renderMeuExtrato()">
+          </div>
+          <div>
+            <label class="form-label">Data final</label>
+            <input class="form-control" type="date" id="ce-fim" onchange="renderMeuExtrato()">
+          </div>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" onclick="limparFiltroExtrato()">Limpar</button>
+          <button class="btn btn-primary btn-sm" onclick="exportMeuExtrato()">Baixar CSV</button>
+          <span id="ce-count" style="font-size:12px;color:var(--gray-500)"></span>
+        </div>
+      </div>
+      <div class="card">
+        <div id="ce-resumo" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1rem"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Data</th><th>Categoria</th><th>Local</th><th>Valor</th><th>Status</th><th></th>
+            </tr></thead>
+            <tbody id="ce-tbody"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--gray-200);display:flex;gap:16px;font-size:13px;flex-wrap:wrap">
+          <span style="color:var(--gray-500)">Total aprovado no periodo:</span>
+          <span style="font-weight:600;font-family:var(--mono);color:var(--green)" id="ce-total-aprov">R$ 0,00</span>
+          <span style="color:var(--gray-500);margin-left:8px">Pendente:</span>
+          <span style="font-weight:600;font-family:var(--mono);color:#D97706" id="ce-total-pend">R$ 0,00</span>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById("main-content").innerHTML = html;
+}
+
+function cTab(el, tabId) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  el.classList.add("active");
+  ["ct-novo","ct-lista","ct-extrato"].forEach(t => {
+    const el2 = document.getElementById(t);
+    if(el2) el2.style.display = t === tabId ? "block" : "none";
+  });
+  if(tabId === "ct-lista")   setTimeout(filtrarMeusRecibos, 50);
+  if(tabId === "ct-extrato") setTimeout(renderMeuExtrato, 50);
+  if(tabId === "ct-novo")    atualizarSaldoColab();
+}
+
+function filtrarMeusRecibos() {
+  const u       = ST.user;
+  const fStatus = (document.getElementById("cl-status") || {}).value || "";
+  const fCat    = (document.getElementById("cl-cat")    || {}).value || "";
+  const fIni    = (document.getElementById("cl-ini")    || {}).value || "";
+  const fFim    = (document.getElementById("cl-fim")    || {}).value || "";
+
+  let meus = ST.recibos.filter(r => {
+    if(r.colabEmail !== u.usuario)        return false;
+    if(fStatus && r.status !== fStatus)   return false;
+    if(fCat    && r.categoria !== fCat)   return false;
+    if(fIni    && r.data < fIni)          return false;
+    if(fFim    && r.data > fFim)          return false;
+    return true;
+  });
+
+  const tbody  = document.getElementById("cl-tbody");
+  const count  = document.getElementById("cl-count");
+  const total  = document.getElementById("cl-total");
+  if(!tbody) return;
+
+  if(meus.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">Nenhum recibo encontrado</div></td></tr>`;
+  } else {
+    tbody.innerHTML = meus.map(r => `<tr>
+      <td><span class="badge badge-info">${r.categoria}</span></td>
+      <td>${fmtDate(r.data)}</td>
+      <td style="font-family:var(--mono);font-weight:600">R$ ${fmtMoney(r.valor)}</td>
+      <td class="hide-mobile" style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.local}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td style="display:flex;gap:5px">
+        <button class="btn btn-secondary btn-sm" onclick="verRecibo('${r.id}')">Ver</button>
+        ${r.status==="pendente" ? `<button class="btn btn-danger btn-sm" onclick="apagarRecibo('${r.id}')">Apagar</button>` : ""}
+      </td>
+    </tr>`).join("");
+  }
+
+  const soma = meus.reduce((a,r) => a + Number(r.valor), 0);
+  if(count) count.textContent = meus.length + " recibo(s)";
+  if(total) total.textContent = "R$ " + fmtMoney(soma);
+}
+
+function limparFiltrosColab() {
+  ["cl-status","cl-cat","cl-ini","cl-fim"].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = "";
+  });
+  filtrarMeusRecibos();
+}
+
+function atualizarSaldoColab() {
+  const u   = ST.user;
+  const sal = ST.saldos.find(s => s.email === u.usuario) || { saldoLiberado:0, gastoAprovado:0 };
+  const disp = Number(sal.saldoLiberado) - Number(sal.gastoAprovado);
+  const pct  = Number(sal.saldoLiberado) > 0
+    ? Math.min(100, Math.round(Number(sal.gastoAprovado) / Number(sal.saldoLiberado) * 100))
+    : 0;
+  const cls  = pct >= 90 ? "danger" : pct >= 70 ? "warn" : "";
+
+  const metricsEl = document.getElementById("c-metrics-box");
+  if(!metricsEl) return;
+  metricsEl.innerHTML = `
+    <div class="metrics-grid" style="margin-bottom:10px">
+      <div class="metric-card">
+        <div class="metric-label">Saldo liberado</div>
+        <div class="metric-value">R$ ${fmtMoney(sal.saldoLiberado)}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Gasto aprovado</div>
+        <div class="metric-value">R$ ${fmtMoney(sal.gastoAprovado)}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Disponivel</div>
+        <div class="metric-value ${disp<=0?"red":disp<=50?"amber":"green"}">R$ ${fmtMoney(disp)}</div>
+      </div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-track"><div class="progress-fill ${cls}" style="width:${pct}%"></div></div>
+      <div class="progress-label">${pct}% do saldo utilizado</div>
+    </div>
+  `;
+}
+
+function renderMeuExtrato() {
+  const u       = ST.user;
+  const fStatus = (document.getElementById("ce-status") || {}).value || "";
+  const fIni    = (document.getElementById("ce-ini")    || {}).value || "";
+  const fFim    = (document.getElementById("ce-fim")    || {}).value || "";
+
+  let recibos = ST.recibos.filter(r => {
+    if(r.colabEmail !== u.usuario)       return false;
+    if(fStatus && r.status !== fStatus)  return false;
+    if(fIni    && r.data < fIni)         return false;
+    if(fFim    && r.data > fFim)         return false;
+    return true;
+  });
+
+  recibos.sort((a,b) => a.data > b.data ? 1 : -1);
+
+  const tbody    = document.getElementById("ce-tbody");
+  const resumoEl = document.getElementById("ce-resumo");
+  const countEl  = document.getElementById("ce-count");
+  const totAprov = document.getElementById("ce-total-aprov");
+  const totPend  = document.getElementById("ce-total-pend");
+  if(!tbody) return;
+
+  const sal = ST.saldos.find(s => s.email === u.usuario) || { saldoLiberado:0, gastoAprovado:0 };
+  const disp = Number(sal.saldoLiberado) - Number(sal.gastoAprovado);
+
+  if(resumoEl) resumoEl.innerHTML = `
+    <div class="metric-card">
+      <div class="metric-label">Saldo liberado</div>
+      <div class="metric-value" style="font-size:16px">R$ ${fmtMoney(sal.saldoLiberado)}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Gasto aprovado</div>
+      <div class="metric-value" style="font-size:16px;color:#C81E1E">R$ ${fmtMoney(sal.gastoAprovado)}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Disponivel</div>
+      <div class="metric-value" style="font-size:16px;color:${disp<=0?"#C81E1E":disp<=50?"#D97706":"var(--green)"}">R$ ${fmtMoney(disp)}</div>
+    </div>
+  `;
+
+  if(recibos.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">Nenhum recibo no periodo</div></td></tr>`;
+  } else {
+    tbody.innerHTML = recibos.map(r => `<tr>
+      <td style="white-space:nowrap">${fmtDate(r.data)}</td>
+      <td><span class="badge badge-info">${r.categoria}</span></td>
+      <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px">${r.local}</td>
+      <td style="font-family:var(--mono);font-weight:600">R$ ${fmtMoney(r.valor)}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td><button class="btn btn-secondary btn-sm" onclick="verRecibo('${r.id}')">Ver</button></td>
+    </tr>`).join("");
+  }
+
+  const aprov = recibos.filter(r=>r.status==="aprovado").reduce((a,r)=>a+Number(r.valor),0);
+  const pend  = recibos.filter(r=>r.status==="pendente").reduce((a,r)=>a+Number(r.valor),0);
+  if(countEl)  countEl.textContent  = recibos.length + " recibo(s)";
+  if(totAprov) totAprov.textContent = "R$ " + fmtMoney(aprov);
+  if(totPend)  totPend.textContent  = "R$ " + fmtMoney(pend);
+}
+
+function limparFiltroExtrato() {
+  ["ce-status","ce-ini","ce-fim"].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = "";
+  });
+  renderMeuExtrato();
+}
+
+function exportMeuExtrato() {
+  const u      = ST.user;
+  const fStatus = (document.getElementById("ce-status") || {}).value || "";
+  const fIni    = (document.getElementById("ce-ini")    || {}).value || "";
+  const fFim    = (document.getElementById("ce-fim")    || {}).value || "";
+
+  let recibos = ST.recibos.filter(r => {
+    if(r.colabEmail !== u.usuario)       return false;
+    if(fStatus && r.status !== fStatus)  return false;
+    if(fIni    && r.data < fIni)         return false;
+    if(fFim    && r.data > fFim)         return false;
+    return true;
+  });
+
+  if(recibos.length === 0) return toast("Nenhum recibo no periodo selecionado");
+
+  recibos.sort((a,b) => a.data > b.data ? 1 : -1);
+
+  const sal  = ST.saldos.find(s => s.email === u.usuario) || { saldoLiberado:0, gastoAprovado:0 };
+  const disp = Number(sal.saldoLiberado) - Number(sal.gastoAprovado);
+  const aprov = recibos.filter(r=>r.status==="aprovado").reduce((a,r)=>a+Number(r.valor),0);
+  const pend  = recibos.filter(r=>r.status==="pendente").reduce((a,r)=>a+Number(r.valor),0);
+
+  const rows = [
+    ["Extrato de Despesas - " + u.nome, "", "", "", ""],
+    ["Periodo", (fIni ? fmtDate(fIni) : "Inicio") + " a " + (fFim ? fmtDate(fFim) : "Hoje"), "", "", ""],
+    [],
+    ["Data", "Categoria", "Local", "Descricao", "Valor", "Status"],
+  ];
+
+  recibos.forEach(r => rows.push([r.data, r.categoria, r.local, r.descricao || "", Number(r.valor).toFixed(2), r.status]));
+
+  rows.push([]);
+  rows.push(["Resumo", "", "", "", "", ""]);
+  rows.push(["Saldo liberado",  Number(sal.saldoLiberado).toFixed(2), "", "", "", ""]);
+  rows.push(["Total aprovado",  aprov.toFixed(2), "", "", "", ""]);
+  rows.push(["Total pendente",  pend.toFixed(2),  "", "", "", ""]);
+  rows.push(["Disponivel",      disp.toFixed(2),  "", "", "", ""]);
+
+  const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(",")).join("\n");
+  const a = document.createElement("a");
+  const periodo = (fIni || "inicio") + "_" + (fFim || "hoje");
+  a.href = "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csv);
+  a.download = "extrato_" + u.nome.replace(/\s+/g,"_").toLowerCase() + "_" + periodo + ".csv";
+  a.click();
+  toast("Extrato exportado!");
+}
+
+function apagarRecibo(id) {
+  const r = ST.recibos.find(x => x.id === id);
+  if(!r) return;
+  if(r.status !== "pendente") return toast("Apenas recibos pendentes podem ser apagados");
+
+  openModal("Confirmar exclusao",
+    `<p style="font-size:14px;color:var(--gray-700)">Tem certeza que deseja apagar este recibo?</p>
+     <div class="card" style="margin-top:12px;padding:.75rem 1rem">
+       <div style="font-size:13px"><b>${r.categoria}</b> - ${fmtDate(r.data)}</div>
+       <div style="font-size:13px;color:var(--gray-500)">${r.local}</div>
+       <div style="font-size:15px;font-weight:700;font-family:var(--mono);margin-top:4px">R$ ${fmtMoney(r.valor)}</div>
+     </div>
+     <div class="alert alert-warn" style="margin-top:12px">Esta acao nao pode ser desfeita.</div>`,
+    `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+     <button class="btn btn-danger" onclick="confirmarApagarRecibo('${id}')">Sim, apagar</button>`
+  );
+}
+
+function confirmarApagarRecibo(id) {
+  const idx = ST.recibos.findIndex(x => x.id === id);
+  if(idx === -1) return;
+  ST.recibos.splice(idx, 1);
+  closeModal();
+  toast("Recibo apagado com sucesso");
+  filtrarMeusRecibos();
+  // atualiza contador na aba
+  const meus = ST.recibos.filter(r => r.colabEmail === ST.user.usuario);
+  const tabEl = document.querySelector(".tab.active");
+  // re-render para atualizar contagem na aba
+  const mainHtml = document.getElementById("main-content");
+  const tabLista = mainHtml ? mainHtml.querySelector && mainHtml.querySelector("[onclick*='ct-lista']") : null;
+  if(tabLista) tabLista.textContent = "Meus recibos (" + meus.length + ")";
+}
+
+
+function previewFile(input) {
+  if(!input.files[0]) return;
+  const file = input.files[0];
+  ST.imgFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    ST.imgData = e.target.result;
+    const isPdf = file.type === "application/pdf";
+    const inner = document.getElementById("c-drop-inner");
+    if(inner) inner.innerHTML = isPdf
+      ? `<div style="font-size:28px;margin-bottom:6px">PDF</div><div style="font-size:12px;font-weight:500">${file.name}</div><div style="font-size:11px;color:var(--gray-500);margin-top:4px">Clique para trocar</div>`
+      : `<img src="${e.target.result}" alt="recibo" style="max-height:100px;border-radius:var(--border-radius-sm);margin-bottom:4px"><div style="font-size:11px;color:var(--gray-500)">Clique para trocar</div>`;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function enviarRecibo() {
+  const val   = parseFloat(document.getElementById("c-valor").value);
+  const data  = document.getElementById("c-data").value;
+  const local = document.getElementById("c-local").value.trim();
+  const cat   = document.getElementById("c-cat").value;
+  const desc  = document.getElementById("c-desc").value.trim();
+
+  if(!val || val<=0) return toast("Informe um valor valido");
+  if(!data)          return toast("Informe a data");
+  if(!local)         return toast("Informe a localizacao");
+
+  const sal  = ST.saldos.find(s => s.email === ST.user.usuario);
+  const disp = sal ? Number(sal.saldoLiberado) - Number(sal.gastoAprovado) : 0;
+  if(val > disp) return toast("Valor excede saldo disponivel (R$ " + fmtMoney(disp) + ")");
+
+  const btn = document.getElementById("c-submit");
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Enviando...';
+
+  const recibo = {
+    colabEmail: ST.user.usuario,
+    colabNome:  ST.user.nome,
+    categoria:  cat,
+    valor:      val,
+    data,
+    local,
+    descricao:  desc,
+    fotoUrl:    "",
+  };
+
+  // 1. salva o recibo primeiro
+  const res = await sheetsCall("addRecibo", { recibo });
+  if(!res.ok) {
+    btn.disabled = false; btn.textContent = "Enviar para aprovacao";
+    return toast("Erro ao enviar recibo. Tente novamente.");
+  }
+
+  const reciboId = res.id;
+
+  // 2. se tem foto/pdf, envia separadamente para o Drive
+  if(ST.imgData && ST.imgFile) {
+    btn.innerHTML = '<div class="spinner"></div> Enviando anexo...';
+    try {
+      const base64 = ST.imgData.split(",")[1];
+      const mimeType = ST.imgFile.type || "image/jpeg";
+      const filename = "recibo_" + reciboId + "_" + ST.imgFile.name;
+      const fotoRes = await sheetsCall("uploadFoto", { base64, mimeType, fileName: filename, reciboId });
+      if(fotoRes.ok && fotoRes.url) {
+        // atualiza recibo local com URL
+        const r = ST.recibos.find(x => x.id === reciboId);
+        if(r) r.fotoUrl = fotoRes.url;
+      }
+    } catch(e) {
+      console.log("Erro ao enviar foto:", e);
+    }
+  }
+
+  btn.disabled = false; btn.textContent = "Enviar para aprovacao";
+  ST.imgData = null;
+  ST.imgFile = null;
+
+  document.getElementById("c-valor").value = "";
+  document.getElementById("c-local").value = "";
+  document.getElementById("c-desc").value  = "";
+  const drop = document.getElementById("c-drop");
+  if(drop) drop.innerHTML = '<div id="c-drop-inner"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="margin-bottom:6px;opacity:.4"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><div>Clique para anexar foto ou PDF</div><div style="font-size:11px;color:var(--gray-400);margin-top:3px">JPG, PNG, PDF - max. 10 MB</div></div>';
+  atualizarSaldoColab();
+  const meus = ST.recibos.filter(r => r.colabEmail === ST.user.usuario);
+  const tabLista = document.querySelector("[onclick*='ct-lista']");
+  if(tabLista) tabLista.textContent = "Meus recibos (" + meus.length + ")";
+
+  toast("Recibo enviado para aprovacao!");
+}
+
+async function aprovarRecibo(id) {
+  const r = ST.recibos.find(x=>x.id===id);
+  if(!r) return;
+  const res = await sheetsCall("updateStatus", { id, status:"aprovado" });
+  if(!res.ok) return toast("Erro ao aprovar");
+  toast("Recibo aprovado!");
+  if(ST.user.perfil==="gestor") renderGestor();
+}
+
+async function reprovarRecibo(id) {
+  const res = await sheetsCall("updateStatus", { id, status:"reprovado" });
+  if(!res.ok) return toast("Erro ao reprovar");
+  toast("Recibo reprovado.");
+  closeModal();
+  if(ST.user.perfil==="gestor") renderGestor();
+}
+
+function verRecibo(id) {
+  const r = ST.recibos.find(x=>x.id===id);
+  if(!r) return;
+  const body = `
+    <table style="width:100%;font-size:13px;border-collapse:collapse">
+      ${row("ID", `<span style="font-family:var(--mono);font-size:12px">${r.id}</span>`)}
+      ${row("Colaborador", r.colabNome)}
+      ${row("Categoria", `<span class="badge badge-info">${r.categoria}</span>`)}
+      ${row("Valor", `<span style="font-family:var(--mono);font-size:16px;font-weight:700">R$ ${fmtMoney(r.valor)}</span>`)}
+      ${row("Data", fmtDate(r.data))}
+      ${row("Local", r.local)}
+      ${r.descricao ? row("Descrição", r.descricao) : ""}
+      ${row("Status", statusBadge(r.status))}
+      ${r.fotoUrl ? `<tr><td style="color:var(--gray-500);padding:8px 0;vertical-align:top">Anexo</td><td style="padding:8px 0"><a href="${r.fotoUrl}" target="_blank" style="color:var(--blue)">Ver anexo no Drive</a></td></tr>` : ""}
+    </table>
+  `;
+  const footer = r.status==="pendente" && ST.user.perfil==="gestor"
+    ? `<button class="btn btn-danger" onclick="reprovarRecibo('${r.id}')">Reprovar</button>
+       <button class="btn btn-success" onclick="aprovarRecibo('${r.id}');closeModal()">Aprovar</button>`
+    : `<button class="btn btn-secondary" onclick="closeModal()">Fechar</button>`;
+
+  openModal("Recibo #" + r.id, body, footer);
+}
+
+function openLiberarSaldo(email, nome) {
+  const body = `
+    <div class="form-group">
+      <label class="form-label">Colaborador</label>
+      <input class="form-control" value="${nome}" readonly style="background:var(--gray-50)">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Valor a liberar (R$)</label>
+      <input class="form-control" id="m-valor" type="number" min="0" step="0.01" placeholder="500,00">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Observação</label>
+      <input class="form-control" id="m-obs" type="text" placeholder="Ex: Visitas março 2026">
+    </div>
+  `;
+  openModal(`Liberar saldo - ${nome}`, body,
+    `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+     <button class="btn btn-primary" onclick="confirmarLiberarSaldo('${email}','${nome}')">Liberar</button>`
+  );
+}
+
+async function confirmarLiberarSaldo(email, nome) {
+  const val = parseFloat(document.getElementById("m-valor").value);
+  const obs = document.getElementById("m-obs").value.trim();
+  if(!val || val<=0) return toast("Informe um valor válido");
+  const res = await sheetsCall("liberarSaldo", { email, valor: val });
+  if(!res.ok) return toast("Erro ao liberar saldo");
+
+  // salva no historico local
+  if(!ST.historico) ST.historico = [];
+  ST.historico.push({
+    tipo: "liberacao",
+    email,
+    nome,
+    valor: val,
+    obs: obs || "Saldo liberado pelo gestor",
+    data: new Date().toISOString().split("T")[0],
+    hora: new Date().toLocaleTimeString("pt-BR", {hour:"2-digit",minute:"2-digit"})
+  });
+
+  closeModal();
+  toast("R$ " + fmtMoney(val) + " liberado para " + nome);
+  renderGestor();
+}
+
+function verExtrato(email) {
+  const s = ST.saldos.find(x => x.email === email);
+  if(!s) return;
+
+  const recibos = ST.recibos.filter(r => r.colabEmail === email);
+  const historico = (ST.historico || []).filter(h => h.email === email);
+
+  // monta linha do tempo unificada: liberacoes + recibos
+  const eventos = [];
+
+  historico.forEach(h => {
+    eventos.push({ data: h.data, hora: h.hora || "00:00", tipo: "liberacao", valor: h.valor, desc: h.obs });
+  });
+
+  recibos.forEach(r => {
+    eventos.push({ data: r.data, hora: "00:00", tipo: r.status, valor: Number(r.valor), desc: r.categoria + " - " + r.local, id: r.id, status: r.status });
+  });
+
+  // ordena por data
+  eventos.sort((a,b) => a.data > b.data ? 1 : a.data < b.data ? -1 : 0);
+
+  // calcula saldo progressivo
+  let saldoAcum = 0;
+  const linhas = eventos.map(ev => {
+    let credito = "", debito = "", cor = "", tipo = "", badge = "";
+    if(ev.tipo === "liberacao") {
+      saldoAcum += ev.valor;
+      credito = "R$ " + fmtMoney(ev.valor);
+      cor = "var(--green)";
+      tipo = "Liberacao";
+      badge = `<span class="badge badge-success">+ Liberacao</span>`;
+    } else if(ev.tipo === "aprovado") {
+      saldoAcum -= ev.valor;
+      debito = "R$ " + fmtMoney(ev.valor);
+      cor = "#C81E1E";
+      badge = `<span class="badge badge-danger">- Aprovado</span>`;
+    } else if(ev.tipo === "pendente") {
+      debito = "R$ " + fmtMoney(ev.valor);
+      badge = `<span class="badge badge-warning">Pendente</span>`;
+    } else {
+      badge = `<span class="badge badge-danger">Reprovado</span>`;
+    }
+    const saldoStr = ev.tipo === "pendente" || ev.tipo === "reprovado"
+      ? `<span style="color:var(--gray-400);font-size:11px">—</span>`
+      : `<span style="font-family:var(--mono);font-weight:600;color:${saldoAcum<0?"#C81E1E":"var(--gray-700)"}">R$ ${fmtMoney(saldoAcum)}</span>`;
+    return `<tr>
+      <td style="font-size:12px;white-space:nowrap">${fmtDate(ev.data)}</td>
+      <td>${badge}</td>
+      <td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ev.desc}</td>
+      <td style="font-family:var(--mono);color:var(--green);font-size:13px">${credito}</td>
+      <td style="font-family:var(--mono);color:#C81E1E;font-size:13px">${debito}</td>
+      <td>${saldoStr}</td>
+      ${ev.id ? `<td><button class="btn btn-secondary btn-sm" onclick="verRecibo('${ev.id}')">Ver</button></td>` : "<td></td>"}
+    </tr>`;
+  });
+
+  const disp = Number(s.saldoLiberado) - Number(s.gastoAprovado);
+  const pend = recibos.filter(r=>r.status==="pendente").reduce((a,r)=>a+Number(r.valor),0);
+  const reprov = recibos.filter(r=>r.status==="reprovado").reduce((a,r)=>a+Number(r.valor),0);
+
+  const body = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+      <div class="metric-card">
+        <div class="metric-label">Liberado total</div>
+        <div class="metric-value" style="font-size:16px">R$ ${fmtMoney(s.saldoLiberado)}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Gasto aprovado</div>
+        <div class="metric-value" style="font-size:16px;color:#C81E1E">R$ ${fmtMoney(s.gastoAprovado)}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Disponivel</div>
+        <div class="metric-value" style="font-size:16px;color:${disp<=0?"#C81E1E":disp<=50?"#D97706":"var(--green)"}">R$ ${fmtMoney(disp)}</div>
+      </div>
+    </div>
+    ${pend>0 ? `<div class="alert alert-warn" style="margin-bottom:12px">(!) R$ ${fmtMoney(pend)} em recibos ainda pendentes de aprovacao</div>` : ""}
+    ${reprov>0 ? `<div class="alert" style="background:var(--red-bg);border-color:#C81E1E;color:var(--red);margin-bottom:12px">(!) R$ ${fmtMoney(reprov)} em recibos reprovados</div>` : ""}
+    ${eventos.length === 0
+      ? `<div class="empty-state">Nenhuma movimentacao registrada</div>`
+      : `<div style="overflow-x:auto;max-height:350px;overflow-y:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead style="position:sticky;top:0;background:var(--white)">
+              <tr>
+                <th style="text-align:left;padding:8px 6px;border-bottom:1px solid var(--gray-200);font-size:11px;color:var(--gray-500)">Data</th>
+                <th style="text-align:left;padding:8px 6px;border-bottom:1px solid var(--gray-200);font-size:11px;color:var(--gray-500)">Tipo</th>
+                <th style="text-align:left;padding:8px 6px;border-bottom:1px solid var(--gray-200);font-size:11px;color:var(--gray-500)">Descricao</th>
+                <th style="text-align:left;padding:8px 6px;border-bottom:1px solid var(--gray-200);font-size:11px;color:var(--gray-500)">Credito</th>
+                <th style="text-align:left;padding:8px 6px;border-bottom:1px solid var(--gray-200);font-size:11px;color:var(--gray-500)">Debito</th>
+                <th style="text-align:left;padding:8px 6px;border-bottom:1px solid var(--gray-200);font-size:11px;color:var(--gray-500)">Saldo</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>${linhas.join("")}</tbody>
+          </table>
+        </div>`
+    }
+  `;
+
+  openModal("Extrato - " + s.nome, body,
+    `<button class="btn btn-secondary" onclick="closeModal()">Fechar</button>
+     <button class="btn btn-primary" onclick="exportExtratoCSV('${email}')">Baixar extrato CSV</button>`
+  );
+}
+
+function exportExtratoCSV(email) {
+  const s = ST.saldos.find(x => x.email === email);
+  if(!s) return;
+  const recibos = ST.recibos.filter(r => r.colabEmail === email);
+  const historico = (ST.historico || []).filter(h => h.email === email);
+
+  const rows = [["Data","Tipo","Descricao","Credito","Debito","Status"]];
+  historico.forEach(h => rows.push([h.data, "Liberacao", h.obs, Number(h.valor).toFixed(2), "", ""]));
+  recibos.forEach(r => rows.push([r.data, r.categoria, r.local + " - " + r.descricao, "", Number(r.valor).toFixed(2), r.status]));
+  rows.push([]);
+  rows.push(["Saldo liberado", Number(s.saldoLiberado).toFixed(2), "", "", "", ""]);
+  rows.push(["Gasto aprovado", Number(s.gastoAprovado).toFixed(2), "", "", "", ""]);
+  rows.push(["Disponivel", (Number(s.saldoLiberado)-Number(s.gastoAprovado)).toFixed(2), "", "", "", ""]);
+
+  const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(",")).join("\n");
+  const a = document.createElement("a");
+  const nome = s.nome.replace(/\s+/g,"_").toLowerCase();
+  a.href = "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csv);
+  a.download = "extrato_" + nome + "_" + new Date().toISOString().split("T")[0] + ".csv";
+  a.click();
+  toast("Extrato exportado!");
+}
+
+function openNovoUsuario() {
+  const body = `
+    <div class="form-group">
+      <label class="form-label">Nome completo *</label>
+      <input class="form-control" id="nu-nome" type="text" placeholder="Nome do colaborador">
+    </div>
+    <div class="form-group">
+      <label class="form-label">E-mail / usuário *</label>
+      <input class="form-control" id="nu-email" type="text" placeholder="email@empresa.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Senha inicial *</label>
+      <input class="form-control" id="nu-senha" type="text" placeholder="Mínimo 6 caracteres">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Perfil</label>
+      <select class="form-control" id="nu-perfil">
+        <option value="colab">Colaborador Externo</option>
+        <option value="gestor">Gestor</option>
+      </select>
+    </div>
+    <div class="alert alert-info" style="margin-top:12px">
+      (i) O usuário receberá o e-mail e senha para acessar o app. Você pode redefinir a senha
+      diretamente na aba <strong>Usuarios</strong> do Google Sheets.
+    </div>
+  `;
+  openModal("Novo usuário", body,
+    `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+     <button class="btn btn-primary" onclick="salvarNovoUsuario()">Criar usuário</button>`
+  );
+}
+
+async function salvarNovoUsuario() {
+  const nome  = document.getElementById("nu-nome").value.trim();
+  const email = document.getElementById("nu-email").value.trim().toLowerCase();
+  const senha = document.getElementById("nu-senha").value;
+  const perfil= document.getElementById("nu-perfil").value;
+  if(!nome)  return toast("Informe o nome");
+  if(!email) return toast("Informe o e-mail");
+  if(!senha || senha.length < 6) return toast("Senha deve ter ao menos 6 caracteres");
+  if(ST.usuarios.find(u => u.usuario===email)) return toast("Usuário já existe");
+
+  const res = await sheetsCall("addUsuario", {
+    usuario: { usuario:email, senha, nome, perfil, ativo:"sim" }
+  });
+  if(!res.ok) return toast("Erro ao criar usuário");
+  closeModal();
+  toast(`Usuário ${nome} criado com sucesso!`);
+  renderGestor();
+}
+
+async function toggleUsuario(email) {
+  const res = await sheetsCall("toggleUsuario", { usuario: email });
+  if(!res.ok) return toast("Erro");
+  toast("Status atualizado");
+  renderGestor();
+}
+
+function exportCSV() {
+  const fColab  = (document.getElementById("exp-colab")    || {}).value || "";
+  const fStatus = (document.getElementById("exp-status")   || {}).value || "";
+  const fIni    = (document.getElementById("exp-data-ini") || {}).value || "";
+  const fFim    = (document.getElementById("exp-data-fim") || {}).value || "";
+
+  let recibos = ST.recibos.filter(r => {
+    if(fColab  && r.colabEmail !== fColab)  return false;
+    if(fStatus && r.status     !== fStatus) return false;
+    if(fIni    && r.data < fIni)            return false;
+    if(fFim    && r.data > fFim)            return false;
+    return true;
+  });
+
+  if(recibos.length === 0) return toast("Nenhum recibo encontrado com esses filtros");
+
+  // nome do arquivo reflete o filtro
+  const nomeColab = fColab
+    ? (ST.saldos.find(s => s.email === fColab) || {}).nome || fColab
+    : "todos";
+  const sufixo = nomeColab.replace(/\s+/g, "_").toLowerCase();
+
+  const rows = [["ID","Colaborador","E-mail","Categoria","Data","Local","Descricao","Valor","Status"]];
+  recibos.forEach(r => rows.push([r.id, r.colabNome, r.colabEmail, r.categoria, r.data, r.local, r.descricao, Number(r.valor).toFixed(2), r.status]));
+
+  // resumo por colaborador (apenas dos filtrados)
+  rows.push([]);
+  rows.push(["Resumo","","","","","","","",""]);
+  rows.push(["Colaborador","Saldo Liberado","Aprovado","Disponivel","","","","",""]);
+  const emailsFiltrados = [...new Set(recibos.map(r => r.colabEmail))];
+  emailsFiltrados.forEach(email => {
+    const s = ST.saldos.find(x => x.email === email);
+    if(!s) return;
+    const aprovado = recibos.filter(r => r.colabEmail===email && r.status==="aprovado").reduce((a,r)=>a+Number(r.valor),0);
+    rows.push([s.nome, Number(s.saldoLiberado).toFixed(2), aprovado.toFixed(2), (Number(s.saldoLiberado)-aprovado).toFixed(2),"","","","",""]);
+  });
+
+  const csv = rows.map(r => r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const a = document.createElement("a");
+  a.href = "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csv);
+  a.download = `despesas_${sufixo}_${new Date().toISOString().split("T")[0]}.csv`;
+  a.click();
+  toast("CSV exportado!");
+}
+
+
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+function initials(n){ return (n||"").split(" ").slice(0,2).map(x=>x[0]).join("").toUpperCase(); }
+function fmtDate(d){ if(!d)return""; const[y,m,dd]=d.split("-"); return`${dd}/${m}/${y}`; }
+function fmtMoney(v){ return Number(v||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function statusBadge(s){
+  return s==="aprovado" ? `<span class="badge badge-success">Aprovado</span>`
+       : s==="reprovado"? `<span class="badge badge-danger">Reprovado</span>`
+       : `<span class="badge badge-warning">Pendente</span>`;
+}
+function row(label, val){ return `<tr><td style="color:var(--gray-500);padding:8px 0;width:110px;vertical-align:top">${label}</td><td style="padding:8px 0">${val}</td></tr>`; }
+function openModal(title, body, footer="") {
+  document.getElementById("modal-title").textContent = title;
+  document.getElementById("modal-body").innerHTML    = body;
+  document.getElementById("modal-footer").innerHTML  = footer;
+  document.getElementById("modal").classList.add("open");
+}
+function closeModal(){ document.getElementById("modal").classList.remove("open"); }
+function modalClickOutside(e){ if(e.target.id==="modal") closeModal(); }
+let _toastTimer;
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(()=>t.classList.remove("show"), 2800);
+}
+function showSync(msg){ const b=document.getElementById("sync-banner"); if(!ST.demoMode){b.style.display="flex"; document.getElementById("sync-msg").textContent=msg;} }
+function hideSync(){ if(!ST.demoMode) document.getElementById("sync-banner").style.display="none"; }
+
+
+(async function() {
+  const saved = localStorage.getItem("despesas_user");
+  if(saved) {
+    // mostra loading enquanto recarrega
+    document.getElementById("s-login").innerHTML = `
+      <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+        <div class="spinner" style="width:32px;height:32px;border-width:3px"></div>
+        <div style="font-size:14px;color:var(--gray-500)">Carregando...</div>
+      </div>
+    `;
+    ST.user = JSON.parse(saved);
+    if (ST.user.perfil !== "gestor") ST.user.perfil = "colab";
+    const [sr, ss, su] = await Promise.all([
+      sheetsCall("getRecibos"), sheetsCall("getSaldos"), sheetsCall("getUsuarios")
+    ]);
+    ST.recibos  = sr.data || [];
+    ST.saldos   = ss.data || [];
+    ST.usuarios = su.data || [];
+    initApp();
+  }
+})();
+</script>
+
+<!--
+╔══════════════════════════════════════════════════════════════╗
+║  📋  INSTRUÇÕES DE CONFIGURAÇÃO DO GOOGLE SHEETS             ║
+╠══════════════════════════════════════════════════════════════╣
+║                                                              ║
+║  1. CRIE A PLANILHA                                          ║
+║     • Acesse sheets.google.com → Nova planilha               ║
+║     • Renomeie para "Gestão de Despesas"                     ║
+║     • Crie 3 abas com os nomes e colunas abaixo:             ║
+║                                                              ║
+║  Aba "Usuarios" (linha 1 = cabeçalho):                       ║
+║    A: usuario | B: senha | C: nome | D: perfil | E: ativo    ║
+║                                                              ║
+║  Aba "Recibos" (linha 1 = cabeçalho):                        ║
+║    A: id | B: colabEmail | C: colabNome | D: categoria       ║
+║    E: valor | F: data | G: local | H: descricao              ║
+║    I: status | J: fotoUrl                                    ║
+║                                                              ║
+║  Aba "Saldos" (linha 1 = cabeçalho):                         ║
+║    A: email | B: nome | C: saldoLiberado | D: gastoAprovado  ║
+║                                                              ║
+║  2. ADICIONE O GESTOR (linha 2 da aba Usuarios):             ║
+║    usuario: gestor@suaempresa.com                            ║
+║    senha:   SuaSenhaForte123                                 ║
+║    nome:    Nome do Gestor                                   ║
+║    perfil:  gestor                                           ║
+║    ativo:   sim                                              ║
+║                                                              ║
+║  3. CRIE O APPS SCRIPT                                       ║
+║     • Na planilha: Extensões → Apps Script                   ║
+║     • Apague o código existente                              ║
+║     • Cole o código abaixo (entre as linhas de asteriscos)   ║
+║     • Salve (Ctrl+S)                                         ║
+║     • Clique em "Implantar" → "Nova implantação"             ║
+║     • Tipo: Aplicativo Web                                   ║
+║     • Executar como: Eu mesmo                                ║
+║     • Quem tem acesso: Qualquer pessoa                       ║
+║     • Copie a URL gerada                                     ║
+║                                                              ║
+║  4. COLE A URL NO APP                                        ║
+║     • Abra este arquivo HTML                                 ║
+║     • Localize: SHEETS_URL: ""                               ║
+║     • Cole a URL entre as aspas                              ║
+║                                                              ║
+║  5. HOSPEDE NO GITHUB PAGES                                  ║
+║     • Crie repositório no github.com (pode ser privado)      ║
+║     • Faça upload deste arquivo como index.html              ║
+║     • Settings → Pages → Branch: main → Save                 ║
+║     • Acesse: https://seuusuario.github.io/seurepositorio    ║
+║                                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║    CÓDIGO DO APPS SCRIPT (cole no editor)                  ║
+╠══════════════════════════════════════════════════════════════╣
+
+function doPost(e) {
+  var data = JSON.parse(e.postData.contents);
+  var ss   = SpreadsheetApp.getActiveSpreadsheet();
+  var res  = { ok: false };
+
+  try {
+    if (data.action === "getUsuarios") {
+      res = { ok: true, data: sheetToJson(ss.getSheetByName("Usuarios")) };
+    }
+    else if (data.action === "getRecibos") {
+      res = { ok: true, data: sheetToJson(ss.getSheetByName("Recibos")) };
+    }
+    else if (data.action === "getSaldos") {
+      res = { ok: true, data: sheetToJson(ss.getSheetByName("Saldos")) };
+    }
+    else if (data.action === "addRecibo") {
+      var r   = data.recibo;
+      var id  = "R" + new Date().getTime();
+      var sh  = ss.getSheetByName("Recibos");
+      sh.appendRow([id, r.colabEmail, r.colabNome, r.categoria, r.valor,
+                    r.data, r.local, r.descricao, "pendente", r.fotoUrl || ""]);
+      res = { ok: true };
+    }
+    else if (data.action === "updateStatus") {
+      var sh   = ss.getSheetByName("Recibos");
+      var rows = sh.getDataRange().getValues();
+      for (var i = 1; i < rows.length; i++) {
+        if (rows[i][0] == data.id) {
+          sh.getRange(i+1, 9).setValue(data.status);
+          if (data.status === "aprovado") {
+            var email = rows[i][1];
+            var valor = parseFloat(rows[i][4]);
+            var sSh   = ss.getSheetByName("Saldos");
+            var sRows = sSh.getDataRange().getValues();
+            for (var j = 1; j < sRows.length; j++) {
+              if (sRows[j][0] === email) {
+                var cur = parseFloat(sRows[j][3]) || 0;
+                sSh.getRange(j+1, 4).setValue(cur + valor);
+              }
+            }
+          }
+          break;
+        }
+      }
+      res = { ok: true };
+    }
+    else if (data.action === "liberarSaldo") {
+      var sh   = ss.getSheetByName("Saldos");
+      var rows = sh.getDataRange().getValues();
+      var found = false;
+      for (var i = 1; i < rows.length; i++) {
+        if (rows[i][0] === data.email) {
+          var cur = parseFloat(rows[i][2]) || 0;
+          sh.getRange(i+1, 3).setValue(cur + parseFloat(data.valor));
+          found = true; break;
+        }
+      }
+      if (!found) {
+        sh.appendRow([data.email, data.nome || data.email, parseFloat(data.valor), 0]);
+      }
+      res = { ok: true };
+    }
+    else if (data.action === "addUsuario") {
+      var u  = data.usuario;
+      var sh = ss.getSheetByName("Usuarios");
+      sh.appendRow([u.usuario, u.senha, u.nome, u.perfil, u.ativo]);
+      if (u.perfil === "colab") {
+        ss.getSheetByName("Saldos").appendRow([u.usuario, u.nome, 0, 0]);
+      }
+      res = { ok: true };
+    }
+    else if (data.action === "toggleUsuario") {
+      var sh   = ss.getSheetByName("Usuarios");
+      var rows = sh.getDataRange().getValues();
+      for (var i = 1; i < rows.length; i++) {
+        if (rows[i][0] === data.usuario) {
+          var cur = rows[i][4];
+          sh.getRange(i+1, 5).setValue(cur === "sim" ? "nao" : "sim");
+          break;
+        }
+      }
+      res = { ok: true };
+    }
+  } catch(err) {
+    res = { ok: false, error: err.message };
+  }
+
+  return ContentService
+    .createTextOutput(JSON.stringify(res))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function sheetToJson(sheet) {
+  var data   = sheet.getDataRange().getValues();
+  var headers = data[0];
+  return data.slice(1).map(function(row) {
+    var obj = {};
+    headers.forEach(function(h, i) { obj[h] = row[i]; });
+    return obj;
+  });
+}
+
+function doGet(e) {
+  return ContentService
+    .createTextOutput(JSON.stringify({ ok: true, msg: "API ativa" }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+╠══════════════════════════════════════════════════════════════╣
+║  Fim das instruções - salve este arquivo com segurança       ║
+╚══════════════════════════════════════════════════════════════╝
+-->
+</body>
+</html>
