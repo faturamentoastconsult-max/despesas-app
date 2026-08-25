@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consolidador de Demonstrativos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Leitor de Excel (SheetJS 0.18.5) — cópia local; a CDN só é usada se o arquivo local faltar -->
+<script src="vendor/xlsx.full.min.js"></script>
+<script>
+  if (typeof XLSX === "undefined") {
+    document.write('<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"><\/script>');
+  }
+</script>
+<style>
+
+/* Veja instruções de uso e publicação no final do arquivo */
+
+:root {
+  --blue:      #1A56DB;
+  --blue-dark: #1341A8;
+  --blue-light:#EEF3FF;
+  --green:     #057A55;
+  --green-bg:  #DEF7EC;
+  --amber:     #92400E;
+  --amber-bg:  #FEF3C7;
+  --red:       #9B1C1C;
+  --red-bg:    #FDE8E8;
+  --gray-50:   #F9FAFB;
+  --gray-100:  #F3F4F6;
+  --gray-200:  #E5E7EB;
+  --gray-300:  #D1D5DB;
+  --gray-400:  #9CA3AF;
+  --gray-500:  #6B7280;
+  --gray-700:  #374151;
+  --gray-900:  #111827;
+  --white:     #FFFFFF;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.05);
+  --shadow:    0 1px 3px rgba(0,0,0,.1), 0 1px 2px rgba(0,0,0,.06);
+  --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
+  --radius-sm: 6px;
+  --radius:    10px;
+  --radius-lg: 14px;
+  --font: 'DM Sans', sans-serif;
+  --mono: 'DM Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; }
+body {
+  font-family: var(--font);
+  background: var(--gray-100);
+  color: var(--gray-900);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── LAYOUT ── */
+.topbar {
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-200);
+  padding: 0 1.5rem;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 15px;
+}
+.brand-icon {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  background: var(--blue);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.main { padding: 1.5rem; max-width: 1180px; margin: 0 auto; width: 100%; }
+
+/* ── COMPONENTES ── */
+.card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+.card-title { font-size: 14px; font-weight: 600; margin-bottom: .25rem; }
+.card-sub   { font-size: 12.5px; color: var(--gray-500); line-height: 1.5; }
+
+.btn {
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: .55rem 1rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background .15s, border-color .15s, opacity .15s;
+  white-space: nowrap;
+}
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-primary   { background: var(--blue); color: #fff; }
+.btn-primary:hover:not(:disabled)   { background: var(--blue-dark); }
+.btn-secondary { background: var(--white); color: var(--gray-700); border-color: var(--gray-300); }
+.btn-secondary:hover:not(:disabled) { background: var(--gray-50); }
+.btn-sm { padding: .4rem .7rem; font-size: 12px; }
+
+.input {
+  font-family: var(--font);
+  font-size: 13px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  padding: .5rem .7rem;
+  width: 100%;
+  background: var(--white);
+  color: var(--gray-900);
+}
+.input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-light); }
+
+.alert {
+  border-radius: var(--radius-sm);
+  padding: .7rem .9rem;
+  font-size: 12.5px;
+  line-height: 1.55;
+  margin-bottom: 1rem;
+  border: 1px solid transparent;
+}
+.alert-warn { background: var(--amber-bg); color: var(--amber); border-color: #FDE68A; }
+.alert-err  { background: var(--red-bg);   color: var(--red);   border-color: #FBD5D5; }
+.alert-ok   { background: var(--green-bg); color: var(--green); border-color: #BCF0DA; }
+
+/* ── DROPZONE ── */
+.dropzone {
+  border: 2px dashed var(--gray-300);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.dropzone:hover, .dropzone.drag {
+  border-color: var(--blue);
+  background: var(--blue-light);
+}
+.dropzone-icon {
+  width: 46px; height: 46px;
+  border-radius: 12px;
+  background: var(--blue-light);
+  color: var(--blue);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto .75rem;
+}
+.dropzone.drag .dropzone-icon { background: var(--white); }
+.dropzone-title { font-size: 14px; font-weight: 600; margin-bottom: .2rem; }
+.dropzone-sub   { font-size: 12.5px; color: var(--gray-500); }
+
+/* ── MÉTRICAS ── */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: .75rem;
+  margin-bottom: 1rem;
+}
+.metric-card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: .9rem 1.1rem;
+}
+.metric-label { font-size: 11.5px; color: var(--gray-500); text-transform: uppercase; letter-spacing: .04em; margin-bottom: .25rem; }
+.metric-value { font-size: 19px; font-weight: 600; font-family: var(--mono); }
+.metric-value.green { color: var(--green); }
+.metric-value.amber { color: var(--amber); }
+
+/* ── TABELA ── */
+.table-wrap {
+  overflow: auto;
+  max-height: 68vh;
+  border-radius: var(--radius);
+  border: 1px solid var(--gray-200);
+  background: var(--white);
+}
+table.data { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 720px; }
+table.data th {
+  background: var(--gray-50);
+  color: var(--gray-500);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  text-align: left;
+  padding: .6rem .8rem;
+  border-bottom: 1px solid var(--gray-200);
+  white-space: nowrap;
+  position: sticky; top: 0; z-index: 2;
+}
+table.data td { padding: .55rem .8rem; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+table.data tbody tr:hover { background: var(--gray-50); }
+table.data tr.foot td {
+  background: var(--gray-50);
+  font-weight: 600;
+  border-top: 2px solid var(--gray-200);
+  border-bottom: none;
+  position: sticky; bottom: 0; z-index: 2;
+}
+.num { font-family: var(--mono); text-align: right; white-space: nowrap; }
+.num.neg { color: var(--red); }
+.cli-code { font-family: var(--mono); font-size: 12px; color: var(--gray-900); }
+.cli-name { font-size: 12px; color: var(--gray-500); }
+.ritm { font-family: var(--mono); font-size: 12px; }
+.ritm-multi { display: block; }
+.pedido-input { font-family: var(--mono); font-size: 12px; min-width: 150px; }
+.pedido-input.vazio { border-color: #FDE68A; background: #FFFBEB; }
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  flex-wrap: wrap;
+  margin-bottom: .9rem;
+}
+.toolbar .grow { flex: 1 1 220px; min-width: 180px; }
+
+.hidden { display: none !important; }
+
+#toast {
+  position: fixed;
+  bottom: 20px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--gray-900);
+  color: #fff;
+  padding: .7rem 1.1rem;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  transition: opacity .2s, transform .2s;
+  z-index: 90;
+  max-width: 90vw;
+  text-align: center;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid var(--gray-300);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.footer-note { font-size: 11.5px; color: var(--gray-400); text-align: center; padding: 1.5rem 1rem 2.5rem; line-height: 1.6; }
+
+@media (max-width: 640px) {
+  .topbar { padding: 0 1rem; }
+  .main   { padding: 1rem; }
+  .topbar-brand { font-size: 14px; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-brand">
+    <div class="brand-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M4 4h11l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z" stroke="white" stroke-width="1.6" stroke-linejoin="round"/>
+        <path d="M14 4v6h6M8 14h8M8 17.5h5" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </div>
+    Consolidador de Demonstrativos
+  </div>
+  <button class="btn btn-secondary btn-sm" onclick="copiarLink()">Copiar link</button>
+</header>
+
+<main class="main">
+
+  <!-- ── UPLOAD ── -->
+  <div class="card" id="card-upload">
+    <div class="card-title">Envie o Excel de faturamento</div>
+    <div class="card-sub" style="margin-bottom:1rem">
+      Selecione a planilha <strong>Consolidado</strong> (uma aba por cliente, no formato
+      "Demonstrativo de Faturamento"). O resumo é gerado automaticamente com
+      <strong>Cliente</strong>, <strong>Total</strong>, <strong>RITM</strong> e <strong>PEDIDO</strong>.
+    </div>
+
+    <div class="dropzone" id="dropzone" tabindex="0" role="button"
+         aria-label="Selecionar arquivo Excel"
+         onclick="document.getElementById('file-input').click()"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('file-input').click();}">
+      <div class="dropzone-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="dropzone-title" id="dz-title">Arraste o arquivo aqui ou clique para selecionar</div>
+      <div class="dropzone-sub" id="dz-sub">Formatos aceitos: .xlsx, .xlsm e .xls &middot; até 25 MB</div>
+    </div>
+    <input type="file" id="file-input" class="hidden" accept=".xlsx,.xlsm,.xls" onchange="onPick(this.files)">
+
+    <div id="status-area" style="margin-top:1rem"></div>
+  </div>
+
+  <!-- ── RESULTADO ── -->
+  <div id="resultado" class="hidden">
+
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Clientes</div>
+        <div class="metric-value" id="m-clientes">0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Total geral</div>
+        <div class="metric-value green" id="m-total">R$ 0,00</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">RITMs</div>
+        <div class="metric-value" id="m-ritms">0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Sem pedido</div>
+        <div class="metric-value amber" id="m-sempedido">0</div>
+      </div>
+    </div>
+
+    <div id="avisos"></div>
+
+    <div class="card">
+      <div class="toolbar">
+        <div class="grow">
+          <input class="input" id="busca" placeholder="Buscar por cliente, RITM ou pedido..." oninput="renderTabela()">
+        </div>
+        <button class="btn btn-primary" onclick="exportarXLSX()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 4v12m0 0l-4.5-4.5M12 16l4.5-4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 18v1.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          Baixar resumo (.xlsx)
+        </button>
+        <button class="btn btn-secondary" onclick="exportarCSV()">CSV</button>
+        <button class="btn btn-secondary" onclick="novoArquivo()">Novo arquivo</button>
+      </div>
+
+      <div class="card-sub" style="margin-bottom:.8rem">
+        A coluna <strong>PEDIDO</strong> é preenchida manualmente — digite o número do pedido ou
+        "emitido sem pedido". Os valores digitados ficam salvos neste navegador e voltam
+        automaticamente no próximo envio do mesmo cliente.
+      </div>
+
+      <div class="table-wrap">
+        <table class="data">
+          <thead>
+            <tr>
+              <th style="width:44%">Cliente</th>
+              <th style="width:16%;text-align:right">Total</th>
+              <th style="width:18%">RITM</th>
+              <th style="width:22%">Pedido</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+          <tfoot id="tfoot"></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    O arquivo é lido diretamente no seu navegador — nada é enviado para servidores.
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   CONFIGURAÇÃO
+══════════════════════════════════════════════════════════ */
+const CONFIG = {
+  // Título gravado na célula A1 do arquivo exportado (igual ao resumo modelo)
+  TITULO_RESUMO: "Consolidado - Faturamento",
+
+  // Prefixo do nome do arquivo baixado: Resumo_DS_04-2026.xlsx
+  PREFIXO_ARQUIVO: "Resumo_DS",
+
+  // Tamanho máximo aceito no upload (MB)
+  MAX_MB: 25,
+
+  // Chave usada para lembrar os números de pedido neste navegador
+  STORAGE_PEDIDOS: "consolidador_pedidos_v1"
+};
+
+/* ══════════════════════════════════════════════════════════
+   ESTADO
+══════════════════════════════════════════════════════════ */
+let ST = {
+  linhas: [],      // { cliente, codigo, nome, total, ritms:[], ds, aba }
+  avisos: [],      // abas ignoradas ou incompletas
+  periodo: "",     // ex: "04/2026"
+  arquivo: ""
+};
+
+/* ══════════════════════════════════════════════════════════
+   UPLOAD
+══════════════════════════════════════════════════════════ */
+const dz = document.getElementById("dropzone");
+
+["dragenter","dragover"].forEach(ev =>
+  dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add("drag"); }));
+["dragleave","drop"].forEach(ev =>
+  dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove("drag"); }));
+dz.addEventListener("drop", e => onPick(e.dataTransfer.files));
+
+// Evita que um arquivo solto fora da área abra em outra aba do navegador
+["dragover","drop"].forEach(ev => window.addEventListener(ev, e => e.preventDefault()));
+
+function onPick(files) {
+  if (!files || !files.length) return;
+  const file = files[0];
+
+  if (!/\.(xlsx|xlsm|xls)$/i.test(file.name))
+    return status("err", "Formato não aceito. Envie um arquivo .xlsx, .xlsm ou .xls.");
+
+  if (file.size > CONFIG.MAX_MB * 1024 * 1024)
+    return status("err", `Arquivo muito grande (${(file.size/1048576).toFixed(1)} MB). Limite: ${CONFIG.MAX_MB} MB.`);
+
+  if (typeof XLSX === "undefined")
+    return status("err", "A biblioteca de leitura de Excel não carregou. Verifique a conexão e recarregue a página.");
+
+  status("load", `Lendo <strong>${escapeHtml(file.name)}</strong>...`);
+
+  const reader = new FileReader();
+  reader.onerror = () => status("err", "Não foi possível ler o arquivo.");
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
+      processar(wb, file.name);
+    } catch (err) {
+      console.error(err);
+      status("err", "Não foi possível abrir a planilha. Confira se o arquivo não está corrompido ou protegido por senha.");
+    }
+  };
+  reader.readAsArrayBuffer(file);
+
+  // permite reenviar o mesmo arquivo depois de corrigi-lo
+  document.getElementById("file-input").value = "";
+}
+
+/* ══════════════════════════════════════════════════════════
+   LEITURA DO DEMONSTRATIVO
+
+   Cada aba segue o layout:
+     linha 1  Demonstrativo de Faturamento
+     linha 3  EMPRESA:  ...
+     linha 4  CLIENTE:  <código> <nome>
+     linha 5  MÊS/ANO:  04/2026
+     linha 6  Nº DS.:   1047594
+     linha 9  cabeçalho ... | SUB-TOTAL | Valor da Taxa | IMPOSTO | TOTAL
+     linhas   funcionários
+     linha    TOTAL:  N Funcionários  ->  valor na coluna TOTAL
+     linha    RITMxxxxxxx (uma ou mais)
+
+   As posições variam entre abas, então tudo é localizado por conteúdo.
+══════════════════════════════════════════════════════════ */
+function processar(wb, nomeArquivo) {
+  const linhas = [];
+  const avisos = [];
+  let periodo = "";
+
+  wb.SheetNames.forEach(aba => {
+    const grid = XLSX.utils.sheet_to_json(wb.Sheets[aba], { header: 1, raw: true, defval: null, blankrows: true });
+
+    let bloco = null;       // bloco (cliente) em construção
+    let colTotal = -1;      // índice da coluna "TOTAL" do cabeçalho vigente
+    const blocos = [];
+
+    const fechar = () => { if (bloco) blocos.push(bloco); bloco = null; };
+
+    grid.forEach(linha => {
+      if (!Array.isArray(linha)) return;
+      const txt = linha.map(c => (c === null || c === undefined) ? "" : String(c));
+
+      txt.forEach(celula => {
+        // CLIENTE: inicia um novo bloco
+        const mCli = celula.match(/^\s*CLIENTE\s*:\s*(.+)$/i);
+        if (mCli) {
+          fechar();
+          bloco = { cliente: limpar(mCli[1]), total: null, ritms: [], ds: [], aba };
+        }
+        // Nº DS.:
+        const mDs = celula.match(/^\s*N[º°ºo.]*\s*DS\.?\s*:\s*(.+)$/i);
+        if (mDs && bloco) limpar(mDs[1]).split(/[,;]+/).forEach(d => { if (d.trim()) bloco.ds.push(d.trim()); });
+
+        // MÊS/ANO: usado no nome do arquivo exportado
+        const mMes = celula.match(/^\s*M[ÊE]S\s*\/?\s*ANO\s*:\s*(.+)$/i);
+        if (mMes && !periodo) periodo = limpar(mMes[1]);
+
+        // RITM (pode haver mais de um por cliente)
+        const achados = celula.match(/RITM\s*\d+/gi);
+        if (achados && bloco) achados.forEach(r => {
+          const cod = r.replace(/\s+/g, "").toUpperCase();
+          if (!bloco.ritms.includes(cod)) bloco.ritms.push(cod);
+        });
+      });
+
+      // Cabeçalho: a coluna TOTAL é a última célula com esse texto exato
+      if (txt.some(c => c.trim().toUpperCase() === "SUB-TOTAL")) {
+        txt.forEach((c, i) => { if (c.trim().toUpperCase() === "TOTAL") colTotal = i; });
+      }
+
+      // Linha de fechamento: "TOTAL:  N Funcionário(s)"
+      if (/TOTAL\s*:\s*\d+\s*Funcion/i.test(txt.join(" ")) && bloco) {
+        const v = valorTotal(linha, colTotal);
+        if (v !== null) bloco.total = (bloco.total || 0) + v;
+      }
+    });
+
+    fechar();
+
+    if (!blocos.length) {
+      avisos.push(`Aba <strong>${escapeHtml(aba)}</strong> ignorada: nenhum campo "CLIENTE:" encontrado.`);
+      return;
+    }
+
+    blocos.forEach(b => {
+      if (b.total === null) {
+        avisos.push(`Aba <strong>${escapeHtml(aba)}</strong>: linha "TOTAL: N Funcionários" não encontrada para <strong>${escapeHtml(b.cliente)}</strong> — total lançado como 0.`);
+        b.total = 0;
+      }
+      if (!b.ritms.length)
+        avisos.push(`Aba <strong>${escapeHtml(aba)}</strong>: nenhum RITM encontrado para <strong>${escapeHtml(b.cliente)}</strong>.`);
+
+      const mCod = b.cliente.match(/^(\S+)\s+(.*)$/);
+      linhas.push({
+        cliente: b.cliente,
+        codigo:  mCod ? mCod[1] : b.cliente,
+        nome:    mCod ? mCod[2] : "",
+        total:   arred(b.total),
+        ritms:   b.ritms,
+        ds:      b.ds.join(", "),
+        aba:     b.aba,
+        pedido:  ""
+      });
+    });
+  });
+
+  if (!linhas.length) {
+    status("err", "Nenhum demonstrativo reconhecido nesta planilha. Confira se é o arquivo consolidado, com uma aba por cliente contendo o campo \"CLIENTE:\".");
+    return;
+  }
+
+  ST = { linhas, avisos, periodo, arquivo: nomeArquivo };
+  restaurarPedidos();
+
+  status("ok", `<strong>${escapeHtml(nomeArquivo)}</strong> processado: ${linhas.length} cliente(s) consolidado(s)${periodo ? " &middot; " + escapeHtml(periodo) : ""}.`);
+  document.getElementById("dz-title").textContent = "Enviar outro arquivo";
+  document.getElementById("resultado").classList.remove("hidden");
+  renderAvisos();
+  renderTabela();
+  document.getElementById("resultado").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// Valor da coluna TOTAL; se o cabeçalho não foi localizado, usa o último número da linha
+function valorTotal(linha, colTotal) {
+  if (colTotal >= 0 && typeof linha[colTotal] === "number") return linha[colTotal];
+  for (let i = linha.length - 1; i >= 0; i--) {
+    if (typeof linha[i] === "number") return linha[i];
+    if (typeof linha[i] === "string" && /^-?[\d.,]+$/.test(linha[i].trim())) {
+      const n = paraNumero(linha[i]);
+      if (n !== null) return n;
+    }
+  }
+  return null;
+}
+
+function paraNumero(s) {
+  const limpo = String(s).trim().replace(/\./g, "").replace(",", ".");
+  const n = Number(limpo);
+  return isNaN(n) ? null : n;
+}
+
+function limpar(s) { return String(s).replace(/\s+/g, " ").trim(); }
+function arred(n)  { return Math.round((Number(n) + Number.EPSILON) * 100) / 100; }
+
+/* ══════════════════════════════════════════════════════════
+   PEDIDOS (preenchimento manual, lembrado no navegador)
+══════════════════════════════════════════════════════════ */
+function lerPedidosSalvos() {
+  try { return JSON.parse(localStorage.getItem(CONFIG.STORAGE_PEDIDOS) || "{}"); }
+  catch (e) { return {}; }
+}
+
+function restaurarPedidos() {
+  const salvos = lerPedidosSalvos();
+  ST.linhas.forEach(l => { if (salvos[l.codigo]) l.pedido = salvos[l.codigo]; });
+}
+
+function setPedido(idx, valor) {
+  const linha = ST.linhas[idx];
+  if (!linha) return;
+  linha.pedido = valor.trim();
+
+  try {
+    const salvos = lerPedidosSalvos();
+    if (linha.pedido) salvos[linha.codigo] = linha.pedido;
+    else delete salvos[linha.codigo];
+    localStorage.setItem(CONFIG.STORAGE_PEDIDOS, JSON.stringify(salvos));
+  } catch (e) { /* navegador sem localStorage: segue só em memória */ }
+
+  atualizarMetricas();
+  const campo = document.getElementById("ped-" + idx);
+  if (campo) campo.classList.toggle("vazio", !linha.pedido);
+}
+
+/* ══════════════════════════════════════════════════════════
+   RENDER
+══════════════════════════════════════════════════════════ */
+function filtradas() {
+  const q = (document.getElementById("busca").value || "").trim().toLowerCase();
+  if (!q) return ST.linhas.map((l, i) => ({ l, i }));
+  return ST.linhas
+    .map((l, i) => ({ l, i }))
+    .filter(({ l }) =>
+      l.cliente.toLowerCase().includes(q) ||
+      l.ritms.join(" ").toLowerCase().includes(q) ||
+      (l.pedido || "").toLowerCase().includes(q) ||
+      (l.ds || "").toLowerCase().includes(q));
+}
+
+function renderTabela() {
+  const itens = filtradas();
+  const tbody = document.getElementById("tbody");
+
+  tbody.innerHTML = itens.length === 0
+    ? `<tr><td colspan="4" style="text-align:center;color:var(--gray-500);padding:2rem">Nenhum cliente encontrado com esse filtro</td></tr>`
+    : itens.map(({ l, i }) => `
+      <tr>
+        <td>
+          <div class="cli-code">${escapeHtml(l.codigo)}</div>
+          <div class="cli-name">${escapeHtml(l.nome)}${l.ds ? " &middot; DS " + escapeHtml(l.ds) : ""}</div>
+        </td>
+        <td class="num ${l.total < 0 ? "neg" : ""}">${fmtMoney(l.total)}</td>
+        <td>${l.ritms.length
+              ? l.ritms.map(r => `<span class="ritm ritm-multi">${escapeHtml(r)}</span>`).join("")
+              : `<span style="color:var(--amber);font-size:12px">sem RITM</span>`}</td>
+        <td>
+          <input class="input pedido-input ${l.pedido ? "" : "vazio"}" id="ped-${i}"
+                 value="${escapeHtml(l.pedido)}" placeholder="nº do pedido"
+                 oninput="setPedido(${i}, this.value)">
+        </td>
+      </tr>`).join("");
+
+  const somaFiltro = itens.reduce((a, { l }) => a + l.total, 0);
+  document.getElementById("tfoot").innerHTML = `
+    <tr class="foot">
+      <td>TOTAL GERAL${itens.length !== ST.linhas.length ? ` (${itens.length} de ${ST.linhas.length} clientes)` : ""}</td>
+      <td class="num ${somaFiltro < 0 ? "neg" : ""}">${fmtMoney(arred(somaFiltro))}</td>
+      <td colspan="2"></td>
+    </tr>`;
+
+  atualizarMetricas();
+}
+
+function atualizarMetricas() {
+  const total  = arred(ST.linhas.reduce((a, l) => a + l.total, 0));
+  const ritms  = ST.linhas.reduce((a, l) => a + l.ritms.length, 0);
+  const semPed = ST.linhas.filter(l => !l.pedido).length;
+
+  document.getElementById("m-clientes").textContent  = ST.linhas.length;
+  document.getElementById("m-total").textContent     = "R$ " + fmtMoney(total);
+  document.getElementById("m-ritms").textContent     = ritms;
+  document.getElementById("m-sempedido").textContent = semPed;
+  document.getElementById("m-sempedido").className   = "metric-value " + (semPed ? "amber" : "green");
+}
+
+function renderAvisos() {
+  document.getElementById("avisos").innerHTML = ST.avisos.length
+    ? `<div class="alert alert-warn"><strong>Confira ${ST.avisos.length} ponto(s) antes de exportar:</strong><br>${ST.avisos.join("<br>")}</div>`
+    : "";
+}
+
+/* ══════════════════════════════════════════════════════════
+   EXPORTAÇÃO — mesmo layout do resumo modelo
+   A1: Consolidado - Faturamento
+   A2: Cliente | Total | RITM | PEDIDO
+   ...
+   última linha: TOTAL GERAL | <soma>
+══════════════════════════════════════════════════════════ */
+function montarAoA() {
+  const aoa = [[CONFIG.TITULO_RESUMO], ["Cliente", "Total", "RITM", "PEDIDO"]];
+  ST.linhas.forEach(l => aoa.push([l.cliente, l.total, l.ritms.join(" / "), l.pedido || ""]));
+  aoa.push(["TOTAL GERAL", arred(ST.linhas.reduce((a, l) => a + l.total, 0))]);
+  return aoa;
+}
+
+function nomeArquivoSaida(ext) {
+  const per = (ST.periodo || "").replace(/[^\d]/g, "-").replace(/^-+|-+$/g, "");
+  return `${CONFIG.PREFIXO_ARQUIVO}${per ? "_" + per : ""}.${ext}`;
+}
+
+function exportarXLSX() {
+  if (!ST.linhas.length) return toast("Envie um arquivo primeiro");
+
+  const aoa = montarAoA();
+  const ws  = XLSX.utils.aoa_to_sheet(aoa);
+
+  ws["!cols"] = [{ wch: 62 }, { wch: 14 }, { wch: 26 }, { wch: 20 }];
+
+  // formato monetário na coluna Total (linhas de dados + TOTAL GERAL)
+  for (let r = 2; r < aoa.length; r++) {
+    const ref = XLSX.utils.encode_cell({ r, c: 1 });
+    if (ws[ref] && typeof ws[ref].v === "number") ws[ref].z = "#,##0.00";
+  }
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Resumo");
+  XLSX.writeFile(wb, nomeArquivoSaida("xlsx"));
+  toast("Resumo baixado!");
+}
+
+function exportarCSV() {
+  if (!ST.linhas.length) return toast("Envie um arquivo primeiro");
+
+  const csv = montarAoA()
+    .map(linha => linha.map(v =>
+      typeof v === "number"
+        ? `"${v.toFixed(2).replace(".", ",")}"`
+        : `"${String(v ?? "").replace(/"/g, '""')}"`
+    ).join(";"))
+    .join("\n");
+
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
+  a.download = nomeArquivoSaida("csv");
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast("CSV baixado!");
+}
+
+/* ══════════════════════════════════════════════════════════
+   AUXILIARES
+══════════════════════════════════════════════════════════ */
+function novoArquivo() {
+  ST = { linhas: [], avisos: [], periodo: "", arquivo: "" };
+  document.getElementById("resultado").classList.add("hidden");
+  document.getElementById("status-area").innerHTML = "";
+  document.getElementById("busca").value = "";
+  document.getElementById("dz-title").textContent = "Arraste o arquivo aqui ou clique para selecionar";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function copiarLink() {
+  const url = location.href.split("#")[0];
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(url).then(
+      () => toast("Link copiado — envie para quem vai subir a planilha"),
+      () => prompt("Copie o link:", url));
+  } else {
+    prompt("Copie o link:", url);
+  }
+}
+
+function status(tipo, msg) {
+  const area = document.getElementById("status-area");
+  if (tipo === "load") {
+    area.innerHTML = `<div class="alert alert-ok" style="display:flex;align-items:center;gap:8px"><div class="spinner"></div>${msg}</div>`;
+  } else {
+    area.innerHTML = `<div class="alert ${tipo === "ok" ? "alert-ok" : "alert-err"}">${msg}</div>`;
+  }
+}
+
+function fmtMoney(v) {
+  return Number(v || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
+
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
+}
+</script>
+
+<!--
+╔══════════════════════════════════════════════════════════════╗
+║  COMO PUBLICAR O LINK COMPARTILHADO                          ║
+╚══════════════════════════════════════════════════════════════╝
+
+1) Esta página funciona sozinha: não precisa de login, servidor
+   nem Apps Script. O Excel é lido dentro do navegador de quem
+   envia — nenhum dado sai da máquina.
+
+2) Publicando no GitHub Pages (mesmo repositório do app):
+     - Settings > Pages > Source: "Deploy from a branch"
+     - Branch: main / (root)  >  Save
+     - O link compartilhado fica:
+         https://SEU-USUARIO.github.io/despesas-app/consolidador.html
+
+3) Envie esse link para quem precisa gerar o resumo. O botão
+   "Copiar link" no topo da página copia o endereço atual.
+
+4) Atenção: quem tiver o link consegue abrir a página. Como nada
+   é armazenado no servidor, não há risco de vazamento de dados
+   já enviados — mas, se quiser restringir o acesso, publique em
+   um site interno ou atrás do login da empresa.
+
+╔══════════════════════════════════════════════════════════════╗
+║  O QUE A PÁGINA LÊ DA PLANILHA                               ║
+╚══════════════════════════════════════════════════════════════╝
+
+Para cada aba do arquivo consolidado:
+
+  Cliente  <- texto após "CLIENTE:"        (linha 4 do modelo)
+  Total    <- coluna "TOTAL" da linha
+              "TOTAL:  N Funcionários"
+  RITM     <- qualquer célula com "RITM" + números
+  DS       <- texto após "Nº DS.:"         (exibido na tela)
+  Período  <- texto após "MÊS/ANO:"        (nome do arquivo)
+
+Regras aplicadas:
+  - Abas sem "CLIENTE:" são ignoradas e aparecem nos avisos.
+  - Uma aba pode conter mais de um cliente: cada "CLIENTE:"
+    inicia um novo bloco.
+  - Se o mesmo cliente tiver mais de uma linha de totais na
+    aba, os valores são somados.
+  - Vários RITMs no mesmo cliente saem separados por " / ".
+  - PEDIDO não existe no arquivo de origem: é digitado na tela
+    e fica salvo neste navegador por código de cliente.
+
+╔══════════════════════════════════════════════════════════════╗
+║  ARQUIVO GERADO                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+Mesmo layout do resumo modelo (ResumoDs.xlsx):
+
+  A1            Consolidado - Faturamento
+  A2:D2         Cliente | Total | RITM | PEDIDO
+  A3:D...       uma linha por cliente
+  última linha  TOTAL GERAL | soma
+
+-->
+</body>
+</html>
