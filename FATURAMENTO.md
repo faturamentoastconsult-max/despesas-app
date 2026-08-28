@@ -92,18 +92,75 @@ Sobre o XML de 08/2026 (210 notas, 148 clientes, R$ 8.667.370,58):
 - o demonstrativo da NF 27382 totaliza R$ 528.885,38 contra R$ 528.885,40 do XML —
   2 centavos, dentro da tolerância padrão
 
+## Conexão com a planilha Controle de Faturamento
+
+Solte a sua `CONTROLE_DE_FATURAMENTO_2026.xlsx` no passo 3. A ferramenta:
+
+1. abre a aba da competência (`08.2026`);
+2. **aprende o código de cliente** — ele não existe na nota, então é deduzido cruzando as
+   linhas já lançadas (NF → código) com o XML (NF → CNPJ). O de-para fica salvo no navegador
+   e cresce a cada mês;
+3. monta as linhas no **layout exato da planilha**, da coluna `Nº` até `PESQUISA`;
+4. preserva as colunas de `Q` em diante (BOLETO, CIDADE CLIENTE, COMERCIAL, ISS…) das linhas
+   que já existem — elas são suas, a ferramenta não escreve nelas;
+5. lista em `Conferencia` toda divergência entre o que calculou e o que já está lançado.
+
+### De onde sai cada coluna
+
+| Coluna | Origem |
+|---|---|
+| `Nº` | sequencial |
+| `Empresa` | sigla do prestador no XML (AST, NDB, PINHAL) |
+| `Nº NF` `EMISSAO` `VALOR BRUTO` `VALOR LIQ.BOLETO` | direto do XML |
+| `CLIENTE` | código do de-para + nome do tomador, no formato da planilha |
+| `VENCIMENTO` | `VENCTO. DA NOTA` na discriminação |
+| `VALOR TAXA` | `VALOR DE TAXA DE SERVICOS`, ou `ASSESSORIA DE R E S DE EFETIVO` |
+| `TRIBUTO` | `VALOR DE ENCARGOS S/TRIBUTOS`, ou `ENC.TRIBUTARIOS` |
+| `VT/VR` | **verbas do demonstrativo** (671/672/698…); a discriminação é o fallback |
+| `EXAMES` | `REEMBOLSO DE EXAMES MEDICOS/AO` + `EXAMES MEDICOS/PO` |
+| `CRACHAS` | `CRACHAS` |
+| `INFOPONTO` | `REPASSE INFOPONTO` |
+| `EPI/UNIFORMES/INFOPONTO` | `REEMB.UNIFORMES,EPIS E OUTROS` |
+| `PESQUISA` | `PESQUISAS CADASTRAIS` (e `SINDICANCIA`) |
+
+O de-para está em `MAPA_COLUNAS`, no topo do bloco da planilha de controle — é o único lugar
+a mexer se surgir coluna nova ou o rótulo do evento mudar. Um evento que não caia em nenhuma
+coluna vai para a aba `Eventos_Sem_Coluna` em vez de sumir.
+
+### VT/VR precisa do demonstrativo
+
+`VT/VR` é a única coluna que a nota não reproduz sozinha. Testando as 207 linhas de AST já
+lançadas em 08/2026, nenhuma combinação de eventos da discriminação passa de ~91 acertos.
+A resposta apareceu no demonstrativo da NF 27382: as verbas
+`671-DESCONTO VALE-TRANSPORTE NAO UTILIZADO` + `672-DESCONTO DE VALE-TRANSPORTE` +
+`698-REFEITORIO` somam **−25.955,29**, exatamente o valor da planilha.
+
+Então: para `VT/VR` fechar em todas as notas, os demonstrativos do mês precisam ser
+carregados. Sem eles a ferramenta usa a discriminação e marca a divergência — ela nunca
+escreve um número que não sabe justificar.
+
+### O que a conferência encontrou em 08/2026
+
+Rodando contra a planilha real, **linhas trocadas entre si**:
+
+| NFs | O que houve |
+|---|---|
+| 27247 ↔ 27248 | valores e clientes invertidos entre as duas linhas |
+| 27293 ↔ 27294 | valores invertidos |
+| 27309 → 27310 → 27311 | valores deslocados uma linha (o de cada NF está na seguinte) |
+| 27434 ↔ 27435 | valores invertidos |
+
+Mais quatro notas (27366 a 27369) com `EMISSAO` um dia antes do que o XML declara.
+
 ## Ajustando às suas colunas
 
-Os cabeçalhos fixos estão em `colsControle()` e a montagem das linhas em `linhasControle()`,
-dentro de `faturamento.html`. Para casar exatamente com a sua planilha, reordene/renomeie os
-dois na mesma ordem — as colunas de evento entram automaticamente entre eles.
+A saída já sai no layout da sua planilha quando você carrega ela no passo 3. Para mudar de
+onde vem cada coluna, edite `MAPA_COLUNAS` e `CAMPOS_CONTROLE` em `faturamento.html`.
 
 ## Limitações conhecidas
 
 - `.xls` antigo (binário) não é lido — salve como `.xlsx`.
 - NFSe não tem layout único no país; o leitor cobre o padrão ABRASF (validado na 2.02).
-- Grafias que diferem por uma palavra inteira não são unificadas: `REEMB.UNIFORMES,EPIS E
-  OUTROS` e `REEMB UNIFORMES,EPIS,OUTROS` aparecem como dois eventos. É proposital — juntar
-  por semelhança arriscaria fundir eventos que são mesmo distintos.
+- `VT/VR` só fecha com os demonstrativos do mês carregados (ver acima).
 - A leitura de `.xlsx` usa `DecompressionStream` (Chrome/Edge 103+, Firefox 113+,
   Safari 16.4+). Em navegador antigo, só o passo 3 fica indisponível.

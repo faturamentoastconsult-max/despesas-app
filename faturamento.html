@@ -245,7 +245,29 @@ tfoot td { font-weight: 600; background: var(--gray-50); border-top: 1px solid v
   <!-- PASSO 3 -->
   <section class="card">
     <div class="card-title">
-      <span><span class="step-num" id="sn-3">3</span>Demonstrativos de faturamento <span class="card-subtitle">&mdash; opcional</span></span>
+      <span><span class="step-num" id="sn-ctr">3</span>Planilha Controle de Faturamento</span>
+      <span class="card-subtitle" id="ctr-resumo">nenhum arquivo</span>
+    </div>
+    <div class="alert alert-info">
+      <span>Solte a sua planilha do ano. A ferramenta abre a aba do mes, <b>aprende o codigo
+      de cliente</b> das linhas ja lancadas (o codigo nao existe na nota) e monta as linhas
+      novas no layout exato dela &mdash; da coluna <b>Nº</b> ate <b>PESQUISA</b>.</span>
+    </div>
+    <div class="drop" id="drop-ctr">
+      <div class="drop-title">Arraste a Controle de Faturamento aqui ou clique para selecionar</div>
+      <div class="drop-sub">.xlsx com uma aba por mes (ex.: "08.2026").</div>
+    </div>
+    <input type="file" id="in-ctr" accept=".xlsx" class="hidden">
+    <div class="alert alert-info hidden" id="ctr-info"></div>
+    <div class="actions">
+      <button class="btn btn-ghost btn-sm" onclick="limparControle()">Limpar planilha</button>
+    </div>
+  </section>
+
+  <!-- PASSO 4 -->
+  <section class="card">
+    <div class="card-title">
+      <span><span class="step-num" id="sn-3">4</span>Demonstrativos de faturamento <span class="card-subtitle">&mdash; opcional</span></span>
       <span class="card-subtitle" id="dem-resumo">nenhum arquivo</span>
     </div>
     <div class="alert alert-info">
@@ -264,39 +286,42 @@ tfoot td { font-weight: 600; background: var(--gray-50); border-top: 1px solid v
     </div>
   </section>
 
-  <!-- PASSO 4 -->
+  <!-- PASSO 5 -->
   <section class="card">
     <div class="card-title">
-      <span><span class="step-num" id="sn-4">4</span>Conciliacao</span>
+      <span><span class="step-num" id="sn-4">5</span>Conciliacao</span>
       <button class="btn btn-primary btn-sm" id="btn-conc" onclick="conciliar()" disabled>Conciliar</button>
     </div>
     <div id="conc-vazio" class="muted" style="font-size:13px">Importe os XMLs para conciliar.</div>
     <div class="hidden" id="conc-box">
       <div class="metrics" id="conc-metrics"></div>
       <div class="tabs">
-        <button class="tab active" data-tab="controle" onclick="aba(this)">Uma linha por NF</button>
+        <button class="tab active" data-tab="planilha" onclick="aba(this)">Linhas para a planilha</button>
+        <button class="tab" data-tab="controle" onclick="aba(this)">Uma linha por NF</button>
         <button class="tab" data-tab="eventos"  onclick="aba(this)">Consolidado por evento</button>
         <button class="tab" data-tab="detalhe"  onclick="aba(this)">Detalhe NF x evento</button>
         <button class="tab" data-tab="probs"    onclick="aba(this)">Divergencias</button>
       </div>
-      <div id="tab-controle"></div>
+      <div id="tab-planilha"></div>
+      <div id="tab-controle" class="hidden"></div>
       <div id="tab-eventos" class="hidden"></div>
       <div id="tab-detalhe" class="hidden"></div>
       <div id="tab-probs"   class="hidden"></div>
     </div>
   </section>
 
-  <!-- PASSO 5 -->
+  <!-- PASSO 6 -->
   <section class="card">
-    <div class="card-title"><span><span class="step-num" id="sn-5">5</span>Preencher a Controle de Faturamento</span></div>
+    <div class="card-title"><span><span class="step-num" id="sn-5">6</span>Preencher a Controle de Faturamento</span></div>
     <div class="alert alert-info">
-      <span>O <b>.xlsx</b> traz: <b>Controle_Faturamento</b> (uma linha por NF, com uma coluna para cada evento),
-      <b>Eventos_Detalhe</b> (formato longo), <b>Consolidado_Eventos</b>, <b>Divergencias</b>,
-      <b>Demonstrativos</b> e <b>Centros_de_Custo</b>. A coluna <b>ID_Unico</b> e a chave de reimportacao.</span>
+      <span>A primeira aba sai no <b>layout exato da sua planilha</b> (Nº ate PESQUISA), pronta para colar.
+      As colunas de Q em diante das linhas ja lancadas sao preservadas. Vem tambem
+      <b>Conferencia</b> (onde o calculado difere do que ja esta lancado),
+      <b>Eventos_Sem_Coluna</b>, <b>Consolidado_Eventos</b> e <b>Divergencias</b>.</span>
     </div>
     <div class="actions">
       <button class="btn btn-primary" id="btn-xlsx" onclick="exportarXLSX()" disabled>Baixar .xlsx</button>
-      <button class="btn btn-ghost"  id="btn-csv"  onclick="exportarCSV()"  disabled>Baixar CSV (uma linha por NF)</button>
+      <button class="btn btn-ghost"  id="btn-csv"  onclick="exportarCSV()"  disabled>Baixar CSV (layout da planilha)</button>
       <button class="btn btn-ghost"  id="btn-copy" onclick="copiarLinhas()" disabled>Copiar linhas para colar</button>
     </div>
   </section>
@@ -330,6 +355,8 @@ const ST = {
   demos: [],      // demonstrativos lidos
   demoArqs: [],   // status por arquivo de demonstrativo
   rotulos: {},    // chave canonica -> rotulo legivel
+  controle: null, // planilha Controle de Faturamento (aba do mes)
+  dePara: {},     // CNPJ do cliente -> { codigo, nome } aprendido da planilha
   res: null
 };
 
@@ -460,6 +487,13 @@ function lerDiscriminacao(disc) {
   return { eventos, totais, extras };
 }
 
+// A planilha separa por empresa (AST, NDB, PINHAL) e cada uma tem a sua
+// propria numeracao de NF -- por isso o casamento e por empresa + numero.
+function siglaEmpresa(nome) {
+  const t = normTxt(nome).split(/[\s\-]+/)[0] || "";
+  return t.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
 function lerXML(texto, arquivo) {
   let doc;
   try { doc = new DOMParser().parseFromString(texto, "application/xml"); }
@@ -511,8 +545,16 @@ function lerNFSe(inf, arquivo) {
   const d = lerDiscriminacao(txtCru(inf, "Discriminacao"));
   const rps = tag(inf, "IdentificacaoRps");
 
+  const prest = tag(inf, "PrestadorServico") || tag(inf, "Prestador");
+  let empresa = "", prestDoc = "";
+  if (prest) {
+    empresa = siglaEmpresa(txt(prest, "NomeFantasia") || txt(prest, "RazaoSocial"));
+    const cn = tag(prest, "Cnpj") || tag(prest, "CNPJ");
+    prestDoc = cn ? normTxt(cn.textContent) : "";
+  }
+
   return {
-    modelo: "NFSe", arquivo,
+    modelo: "NFSe", arquivo, empresa, prestDoc,
     numero, serie: rps ? txtFilho(rps, "Serie") : "",
     chave: txtFilho(inf, "CodigoVerificacao"),
     emissao: (txtFilho(inf, "DataEmissao") || "").slice(0, 10),
@@ -530,8 +572,11 @@ function lerNFe(infNFe, arquivo) {
   const dest = tag(infNFe, "dest");
   const tot  = tag(infNFe, "ICMSTot");
   const valor = tot ? toNum(txt(tot, "vNF")) : 0;
+  const emit = tag(infNFe, "emit");
   return {
     modelo: "NFe", arquivo,
+    empresa: emit ? siglaEmpresa(txt(emit, "xFant") || txt(emit, "xNome")) : "",
+    prestDoc: emit ? txt(emit, "CNPJ") : "",
     numero: txt(ide, "nNF"), serie: txt(ide, "serie"),
     chave: (infNFe.getAttribute("Id") || "").replace(/\D/g, ""),
     emissao: (txt(ide, "dhEmi") || txt(ide, "dEmi") || "").slice(0, 10),
@@ -605,48 +650,19 @@ async function textoDoZip(entrada) {
   if (entrada.metodo === 0) return new TextDecoder().decode(entrada.dados);
   if (entrada.metodo !== 8) throw new Error("compactacao nao suportada no .xlsx");
   if (typeof DecompressionStream === "undefined")
-    throw new Error("navegador sem suporte a leitura de .xlsx - salve o rateio como CSV");
+    throw new Error("navegador sem suporte a leitura de .xlsx");
   const fluxo = new Blob([entrada.dados]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
   return await new Response(fluxo).text();
 }
 
-async function lerXLSX(buffer) {
-  const arqs = abrirZip(buffer);
-  const dp = new DOMParser();
-
-  // textos compartilhados
-  const compart = [];
-  const ssXml = await textoDoZip(arqs["xl/sharedStrings.xml"]);
-  if (ssXml) {
-    const doc = dp.parseFromString(ssXml, "application/xml");
-    tags(doc, "si").forEach(si => compart.push(tags(si, "t").map(t => t.textContent).join("")));
-  }
-
-  // primeira aba, na ordem declarada no workbook
-  let alvo = "xl/worksheets/sheet1.xml";
-  const wbXml   = await textoDoZip(arqs["xl/workbook.xml"]);
-  const relsXml = await textoDoZip(arqs["xl/_rels/workbook.xml.rels"]);
-  if (wbXml && relsXml) {
-    const wb    = dp.parseFromString(wbXml, "application/xml");
-    const rels  = dp.parseFromString(relsXml, "application/xml");
-    const aba   = tags(wb, "sheet")[0];
-    const rid   = aba && (aba.getAttribute("r:id") || aba.getAttribute("id"));
-    const rel   = tags(rels, "Relationship").filter(r => r.getAttribute("Id") === rid)[0];
-    if (rel) {
-      const destino = (rel.getAttribute("Target") || "").replace(/^\/?(xl\/)?/, "");
-      if (destino) alvo = "xl/" + destino;
-    }
-  }
-
-  const shXml = await textoDoZip(arqs[alvo] || arqs["xl/worksheets/sheet1.xml"]);
-  if (!shXml) throw new Error("nao encontrei nenhuma planilha no arquivo");
-
-  const doc  = dp.parseFromString(shXml, "application/xml");
+function matrizDaFolha(doc, compart, maxLinhas) {
   const dados = tag(doc, "sheetData");
   const matriz = [];
-
-  filhos(dados, "row").forEach((row, ordem) => {
-    const iLinha = parseInt(row.getAttribute("r") || (ordem + 1), 10) - 1;
+  const linhasXml = filhos(dados, "row");
+  for (let k = 0; k < linhasXml.length; k++) {
+    const row = linhasXml[k];
+    const iLinha = parseInt(row.getAttribute("r") || (k + 1), 10) - 1;
+    if (maxLinhas && iLinha >= maxLinhas) break;
     const linha = [];
     filhos(row, "c").forEach(c => {
       const col = refColuna(c.getAttribute("r"));
@@ -657,15 +673,14 @@ async function lerXLSX(buffer) {
       } else {
         const vEl = filhos(c, "v")[0];
         const cru = vEl ? vEl.textContent : "";
-        if (t === "s")                    v = compart[parseInt(cru, 10)] || "";
+        if (t === "s")                     v = compart[parseInt(cru, 10)] || "";
         else if (t === "str" || t === "e") v = cru;
         else                               v = cru === "" ? "" : Number(cru);
       }
       linha[col - 1] = v;
     });
     matriz[iLinha] = linha;
-  });
-
+  }
   for (let i = 0; i < matriz.length; i++) {
     if (!matriz[i]) matriz[i] = [];
     for (let j = 0; j < matriz[i].length; j++)
@@ -674,12 +689,63 @@ async function lerXLSX(buffer) {
   return matriz;
 }
 
+// Abre a pasta de trabalho e devolve as abas sob demanda -- a planilha de
+// controle tem uma aba por mes, e ler todas seria desperdicio.
+async function abrirPlanilha(buffer) {
+  const arqs = abrirZip(buffer);
+  const dp = new DOMParser();
+
+  const compart = [];
+  const ssXml = await textoDoZip(arqs["xl/sharedStrings.xml"]);
+  if (ssXml) {
+    const d = dp.parseFromString(ssXml, "application/xml");
+    tags(d, "si").forEach(si => compart.push(tags(si, "t").map(t => t.textContent).join("")));
+  }
+
+  const wbXml   = await textoDoZip(arqs["xl/workbook.xml"]);
+  const relsXml = await textoDoZip(arqs["xl/_rels/workbook.xml.rels"]);
+  let abas = [];
+  if (wbXml) {
+    const wb = dp.parseFromString(wbXml, "application/xml");
+    const mapa = {};
+    if (relsXml) {
+      const rels = dp.parseFromString(relsXml, "application/xml");
+      tags(rels, "Relationship").forEach(r =>
+        mapa[r.getAttribute("Id")] = (r.getAttribute("Target") || "").replace(/^\/?(xl\/)?/, ""));
+    }
+    abas = tags(wb, "sheet").map((s, i) => ({
+      nome: s.getAttribute("name") || ("Planilha" + (i + 1)),
+      caminho: "xl/" + (mapa[s.getAttribute("r:id") || s.getAttribute("id")] || ("worksheets/sheet" + (i + 1) + ".xml"))
+    }));
+  }
+  if (!abas.length) abas = [{ nome: "Planilha1", caminho: "xl/worksheets/sheet1.xml" }];
+
+  return {
+    nomes: abas.map(a => a.nome),
+    async ler(nome, maxLinhas) {
+      const a = abas.find(x => x.nome === nome) || abas[0];
+      const xml = await textoDoZip(arqs[a.caminho]);
+      if (!xml) throw new Error("aba " + a.nome + " nao encontrada no arquivo");
+      return matrizDaFolha(dp.parseFromString(xml, "application/xml"), compart, maxLinhas);
+    }
+  };
+}
+
+async function lerXLSX(buffer) {
+  const p = await abrirPlanilha(buffer);
+  return p.ler(p.nomes[0]);
+}
 
 /* ── demonstrativo de faturamento (.xlsx, um por NF) ──────────
    Formato: titulo com o numero da NF, linha de CLIENTE, e blocos
    por centro de custo. Cada bloco tem o seu proprio cabecalho e
    termina num "Total do CCusto". As colunas de evento sao as que
    comecam com o codigo da verba (ex.: "002-SALARIO MES (Valor)"). */
+
+// As verbas de vale-transporte / refeicao / cesta do demonstrativo. E daqui
+// que sai o VT/VR da planilha: a discriminacao da nota so reproduz esse valor
+// quando a nota o agrupa explicitamente.
+const VERBAS_VTVR = /VALETRANSPORTE|VALEREFEICAO|VALEALIMENTACAO|REFEITORIO|CESTABASICA|ALIMENTACAO|TRANSPORTE/;
 
 const DEM_TOTAIS = { "SUBTOTAL":"subTotal", "ISS":"iss", "TRIBUTOFISCAL":"tributoFiscal",
                      "TOTALGERAL":"totalGeral", "RETENCOES":"retencoes", "TOTALLIQUIDO":"totalLiquido" };
@@ -773,6 +839,11 @@ function lerDemonstrativo(matriz, arquivo) {
     .map(([chave, o]) => ({ chave, rotulo: o.rotulo, valor: round2(o.valor) }))
     .sort((a, b) => b.valor - a.valor);
 
+  // codigo da verba fora da comparacao: "671-DESCONTO VALE-TRANSPORTE..." -> "DESCONTOVALETRANSPORTE..."
+  const vtvr = round2(eventos
+    .filter(e => VERBAS_VTVR.test(e.chave.replace(/^\d+/, "")))
+    .reduce((a, e) => a + e.valor, 0));
+
   // sem a linha "Total da NF", soma os centros de custo
   if (totalNF.totalGeral == null) {
     ["subTotal","iss","tributoFiscal","totalGeral","retencoes","totalLiquido"].forEach(n => {
@@ -782,7 +853,7 @@ function lerDemonstrativo(matriz, arquivo) {
 
   return { ok:true, dem: {
     arquivo, nf, nfKey: normNF(nf), emissao, cliente, ds,
-    eventos, centros,
+    eventos, centros, vtvr,
     subTotal: round2(totalNF.subTotal || 0),
     iss: round2(totalNF.iss || 0),
     tributoFiscal: round2(totalNF.tributoFiscal || 0),
@@ -951,6 +1022,208 @@ function atualizarBotoes() {
 </script>
 
 <script>
+/* ── planilha Controle de Faturamento ─────────────────────────
+   Le a aba do mes, aprende o codigo de cliente a partir das linhas
+   ja preenchidas (casando NF -> CNPJ pelo XML) e monta as linhas
+   novas no layout exato da planilha.                             */
+
+// De-para evento -> coluna. Editar aqui e o unico lugar que muda
+// se a planilha ganhar coluna nova ou o rotulo do evento mudar.
+const MAPA_COLUNAS = {
+  "VALORDETAXADESERVICOS":          "taxa",
+  "ASSESSORIADERESDEEFETIVO":       "taxa",
+  "VALORDEENCARGOSSTRIBUTOS":       "tributo",
+  "ENCTRIBUTARIOS":                 "tributo",
+  "FORNECIMENTODEVTRANSPORTE":      "vtvr",
+  "FORNECIMENTODEVREFEICAO":        "vtvr",
+  "FORNECIMENTOCESTABASICAVA":      "vtvr",
+  "FORNECIMENTODEVALIMENTACAOCB":   "vtvr",
+  "TOTALDASDEDUCOES":               "vtvr",
+  "DEDUCOESEVENTO671672":           "vtvr",
+  "REEMBOLSODEEXAMESMEDICOSAO":     "exames",
+  "EXAMESMEDICOSPO":                "exames",
+  "CRACHAS":                        "crachas",
+  "REPASSEINFOPONTO":               "infoponto",
+  "REEMBUNIFORMESEPISEOUTROS":      "epi",
+  "REEMBUNIFORMESEPISOUTROS":       "epi",
+  "PESQUISASCADASTRAIS":            "pesquisa",
+  "SINDICANCIA":                    "pesquisa",
+  "SINDICANCIAS":                   "pesquisa",
+  "PESQUISASINDICANCIA":            "pesquisa",
+  "VALORSALARIOSENCARGOS":          "salarios"   // nao tem coluna: e o resto da nota
+};
+
+// ordem das colunas A..P que a ferramenta preenche
+const CAMPOS_CONTROLE = [
+  { chave:"seq",       titulo:"Nº" },
+  { chave:"empresa",   titulo:"Empresa" },
+  { chave:"nf",        titulo:"Nº NF" },
+  { chave:"cliente",   titulo:"CLIENTE" },
+  { chave:"emissao",   titulo:"EMISSAO" },
+  { chave:"vencimento",titulo:"VENCIMENTO" },
+  { chave:"taxa",      titulo:"VALOR TAXA" },
+  { chave:"tributo",   titulo:"TRIBUTO" },
+  { chave:"bruto",     titulo:"VALOR BRUTO" },
+  { chave:"liquido",   titulo:"VALOR LIQ.BOLETO" },
+  { chave:"vtvr",      titulo:"VT/VR" },
+  { chave:"exames",    titulo:"EXAMES" },
+  { chave:"crachas",   titulo:"CRACHAS" },
+  { chave:"infoponto", titulo:"INFOPONTO" },
+  { chave:"epi",       titulo:"EPI/UNIFORMES/INFOPONTO" },
+  { chave:"pesquisa",  titulo:"PESQUISA" }
+];
+
+const DEPARA_KEY = "conector_faturamento_clientes_v1";
+
+function carregarDePara() {
+  try { return JSON.parse(localStorage.getItem(DEPARA_KEY) || "{}"); }
+  catch (e) { return {}; }
+}
+function salvarDePara(mapa) {
+  try { localStorage.setItem(DEPARA_KEY, JSON.stringify(mapa)); } catch (e) {}
+}
+
+// "00507             UNIMED NACIONAL - COOPERATIVA" -> codigo + nome
+function partirCliente(v) {
+  const s = String(v == null ? "" : v);
+  const m = /^(\S+)\s{2,}(.*)$/.exec(s);
+  if (!m) return { codigo: "", nome: normTxt(s) };
+  return { codigo: m[1].trim(), nome: normTxt(m[2]) };
+}
+function montarCliente(codigo, nome) {
+  const cod = String(codigo || "");
+  const n = normTxt(nome).slice(0, 30);
+  return cod ? (cod + " ".repeat(Math.max(1, 18 - cod.length)) + n) : n;
+}
+
+function abaDaCompetencia(nomes, comp) {
+  const alvo = canon(comp.label);                         // "082026"
+  let achou = nomes.find(n => canon(n) === alvo);
+  if (achou) return achou;
+  achou = nomes.find(n => canon(n).startsWith(alvo));     // "08.2026 (2)"
+  return achou || null;
+}
+
+async function receberControle(files) {
+  const f = files[0];
+  if (!/\.xlsx$/i.test(f.name)) { toast("A planilha de controle precisa ser .xlsx"); return; }
+
+  let pasta;
+  try { pasta = await abrirPlanilha(await f.arrayBuffer()); }
+  catch (e) { toast("Nao consegui abrir: " + e.message); return; }
+
+  const comp = compAtual();
+  const aba = abaDaCompetencia(pasta.nomes, comp);
+  if (!aba) {
+    toast("Nao achei a aba " + comp.label + " (abas: " + pasta.nomes.join(", ") + ")");
+    return;
+  }
+
+  let matriz;
+  try { matriz = await pasta.ler(aba, 5000); }
+  catch (e) { toast("Nao consegui ler a aba " + aba + ": " + e.message); return; }
+
+  const cabecalho = (matriz[0] || []).map(h => normTxt(h));
+  const linhas = matriz.slice(1).filter(l => l && normTxt(cel(l, 2)) !== "");
+
+  ST.controle = {
+    arquivo: f.name, aba, abas: pasta.nomes, cabecalho, linhas,
+    largura: Math.max(cabecalho.length, ...linhas.map(l => l.length), 0)
+  };
+
+  aprenderClientes();
+  renderControle();
+  ST.res = null;
+  renderConciliacao();
+  toast("Aba " + aba + " lida: " + linhas.length + " linha(s)");
+}
+
+// Aprende CNPJ -> codigo cruzando as linhas ja preenchidas com o XML.
+// E assim que o codigo interno do cliente, que nao existe na nota,
+// chega nas linhas novas.
+function aprenderClientes() {
+  if (!ST.controle) return 0;
+  const mapa = carregarDePara();
+  let novos = 0;
+
+  const porChave = new Map();
+  ST.notas.forEach(n => porChave.set(chaveNota(n), n));
+
+  ST.controle.linhas.forEach(l => {
+    const empresa = normTxt(cel(l, 1)).toUpperCase();
+    const nf = normNF(cel(l, 2));
+    if (!nf) return;
+    const nota = porChave.get(empresa + "|" + nf);
+    if (!nota || !nota.doc) return;
+    const c = partirCliente(cel(l, 3));
+    if (!c.codigo) return;
+    const atual = mapa[nota.doc];
+    if (!atual || atual.codigo !== c.codigo || atual.nome !== c.nome) novos++;
+    mapa[nota.doc] = { codigo: c.codigo, nome: c.nome };
+  });
+
+  salvarDePara(mapa);
+  ST.dePara = mapa;
+  return novos;
+}
+
+function chaveNota(n) { return String(n.empresa || "").toUpperCase() + "|" + normNF(n.numero); }
+
+function renderControle() {
+  const c = ST.controle;
+  document.getElementById("ctr-resumo").textContent = c
+    ? c.arquivo + " - aba " + c.aba + " - " + c.linhas.length + " linha(s)"
+    : "nenhum arquivo";
+  document.getElementById("sn-ctr").classList.toggle("done", !!c);
+  const box = document.getElementById("ctr-info");
+  if (!c) { box.classList.add("hidden"); return; }
+  box.classList.remove("hidden");
+  const conhecidos = Object.keys(ST.dePara || {}).length;
+  box.innerHTML = `<span>Aba <b>${esc(c.aba)}</b> com <b>${c.linhas.length}</b> linhas ja lancadas.
+    De-para de clientes: <b>${conhecidos}</b> CNPJ(s) com codigo conhecido.
+    Abas no arquivo: ${esc(c.abas.join(", "))}.</span>`;
+  atualizarBotoes();
+}
+
+function limparControle() {
+  ST.controle = null; ST.res = null;
+  renderControle(); renderConciliacao();
+}
+
+/* ── montagem das linhas no layout da planilha ────────────────── */
+
+function valoresPorColuna(nota) {
+  const v = { taxa:0, tributo:0, vtvr:0, exames:0, crachas:0, infoponto:0, epi:0, pesquisa:0, salarios:0 };
+  const semColuna = [];
+  nota.eventos.forEach(e => {
+    const destino = MAPA_COLUNAS[e.chave];
+    if (destino) v[destino] = round2(v[destino] + e.valor);
+    else semColuna.push({ rotulo: ST.rotulos[e.chave] || e.rotulo, valor: e.valor });
+  });
+  return { v, semColuna };
+}
+
+function linhaControle(nota, seq, dem) {
+  const { v, semColuna } = valoresPorColuna(nota);
+  const dp = (ST.dePara || {})[nota.doc];
+  // o demonstrativo e a fonte melhor de VT/VR; a discriminacao e o fallback
+  const vtvr = dem ? dem.vtvr : v.vtvr;
+  return {
+    seq,
+    empresa: nota.empresa || "",
+    nf: nota.numero,
+    cliente: montarCliente(dp ? dp.codigo : "", dp ? dp.nome : nota.cliente),
+    codigoCliente: dp ? dp.codigo : "",
+    emissao: nota.emissao,
+    vencimento: nota.vencimento,
+    taxa: v.taxa, tributo: v.tributo,
+    bruto: round2(nota.valorServicos), liquido: round2(nota.valorLiquido),
+    vtvr, origemVtVr: dem ? "demonstrativo" : "nota", exames: v.exames, crachas: v.crachas,
+    infoponto: v.infoponto, epi: v.epi, pesquisa: v.pesquisa,
+    salarios: v.salarios, semColuna
+  };
+}
+
 /* ── passo 4: conciliacao ────────────────────────────────────── */
 
 function conciliar() {
@@ -1035,10 +1308,162 @@ function conciliar() {
     okCount: notas.filter(n => n.status === "OK").length
   };
 
+  ST.res.planilha = montarPlanilha();
+
   renderConciliacao();
   atualizarBotoes();
   document.getElementById("sn-4").classList.toggle("done", problemas.length === 0);
   toast(problemas.length ? problemas.length + " nota(s) a conferir" : "Tudo conciliado");
+}
+
+
+/* ── linhas no layout da planilha + conferencia ──────────────── */
+
+// datas na planilha vem como numero de serie do Excel
+function serialParaISO(n) {
+  const ms = Date.UTC(1899, 11, 30) + Math.round(Number(n)) * 86400000;
+  const d = new Date(ms);
+  if (isNaN(d)) return "";
+  return d.toISOString().slice(0, 10);
+}
+function paraISO(v) {
+  if (v == null || v === "") return "";
+  if (typeof v === "number") return serialParaISO(v);
+  const s = String(v).trim();
+  let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  if (m) return m[1] + "-" + m[2] + "-" + m[3];
+  m = /^(\d{2})\/(\d{2})\/(\d{4})/.exec(s);
+  if (m) return m[3] + "-" + m[2] + "-" + m[1];
+  return "";
+}
+function dataBR(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
+  return m ? m[3] + "/" + m[2] + "/" + m[1] : (iso || "");
+}
+
+const CAMPOS_CONFERE = [
+  { chave:"empresa",   col:1,  rotulo:"Empresa",          tipo:"texto" },
+  { chave:"cliente",   col:3,  rotulo:"CLIENTE",          tipo:"texto" },
+  { chave:"emissao",   col:4,  rotulo:"EMISSAO",          tipo:"data"  },
+  { chave:"vencimento",col:5,  rotulo:"VENCIMENTO",       tipo:"data"  },
+  { chave:"taxa",      col:6,  rotulo:"VALOR TAXA",       tipo:"valor" },
+  { chave:"tributo",   col:7,  rotulo:"TRIBUTO",          tipo:"valor" },
+  { chave:"bruto",     col:8,  rotulo:"VALOR BRUTO",      tipo:"valor" },
+  { chave:"liquido",   col:9,  rotulo:"VALOR LIQ.BOLETO", tipo:"valor" },
+  { chave:"vtvr",      col:10, rotulo:"VT/VR",            tipo:"valor" }
+];
+
+function montarPlanilha() {
+  const tol = tolerancia();
+  const existentes = new Map();
+  if (ST.controle) {
+    ST.controle.linhas.forEach(l => {
+      const k = normTxt(cel(l, 1)).toUpperCase() + "|" + normNF(cel(l, 2));
+      existentes.set(k, l);
+    });
+  }
+
+  const ordenadas = ST.notas.slice().sort((a, b) => {
+    const e = String(a.empresa || "").localeCompare(String(b.empresa || ""));
+    return e !== 0 ? e : (Number(normNF(a.numero)) - Number(normNF(b.numero)));
+  });
+
+  const linhas = [], conferencia = [], semColunaGeral = [];
+  ordenadas.forEach((nota, i) => {
+    const dem = ST.demos.find(d => d.nfKey === normNF(nota.numero)) || null;
+    const lc = linhaControle(nota, i + 1, dem);
+    const k = String(nota.empresa || "").toUpperCase() + "|" + normNF(nota.numero);
+    const atual = existentes.get(k) || null;
+    lc.jaLancada = !!atual;
+    lc.semCodigo = !lc.codigoCliente;
+
+    if (atual) {
+      CAMPOS_CONFERE.forEach(c => {
+        const naPlanilha = cel(atual, c.col);
+        if (naPlanilha === "" || naPlanilha == null) return;
+        let igual, mostraP, mostraC;
+        if (c.tipo === "valor") {
+          const p = toNum(naPlanilha), x = Number(lc[c.chave]) || 0;
+          igual = Math.abs(round2(p - x)) <= tol;
+          mostraP = brl(p); mostraC = brl(x);
+        } else if (c.tipo === "data") {
+          const p = paraISO(naPlanilha), x = paraISO(lc[c.chave]);
+          igual = !x || p === x;
+          mostraP = p; mostraC = x;
+        } else {
+          const p = normTxt(naPlanilha), x = normTxt(lc[c.chave]);
+          igual = canon(p) === canon(x);
+          mostraP = p; mostraC = x;
+        }
+        if (!igual) conferencia.push({
+          empresa: nota.empresa, nf: nota.numero, cliente: nota.cliente,
+          coluna: c.rotulo, naPlanilha: mostraP, calculado: mostraC
+        });
+      });
+    }
+
+    lc.semColuna.forEach(sc => semColunaGeral.push({ nf: nota.numero, rotulo: sc.rotulo, valor: sc.valor }));
+    linhas.push(lc);
+  });
+
+  return { linhas, conferencia, semColunaGeral, existentes };
+}
+
+function cabecalhoPlanilha() {
+  if (ST.controle && ST.controle.cabecalho.length) return ST.controle.cabecalho.slice();
+  return CAMPOS_CONTROLE.map(c => c.titulo);
+}
+
+// A..P sai da ferramenta; da coluna Q em diante o que ja estava na planilha
+// e preservado -- boleto, cidade, comercial e situacao do ISS sao dela.
+function linhasParaPlanilha() {
+  const p = ST.res.planilha;
+  const largura = Math.max(cabecalhoPlanilha().length, CAMPOS_CONTROLE.length);
+  return p.linhas.map(l => {
+    const atual = p.existentes.get(String(l.empresa).toUpperCase() + "|" + normNF(l.nf));
+    const linha = new Array(largura).fill("");
+    CAMPOS_CONTROLE.forEach((c, i) => {
+      let v = l[c.chave];
+      if (c.chave === "emissao" || c.chave === "vencimento") v = dataBR(v);
+      linha[i] = (v === 0 && c.chave !== "seq") ? 0 : (v == null ? "" : v);
+    });
+    if (atual) for (let i = CAMPOS_CONTROLE.length; i < largura; i++)
+      linha[i] = (atual[i] == null ? "" : atual[i]);
+    return linha;
+  });
+}
+
+function renderPlanilha() {
+  const p = ST.res.planilha;
+  const cab = cabecalhoPlanilha().slice(0, CAMPOS_CONTROLE.length);
+  const linhas = p.linhas.slice(0, LIMITE_TELA);
+  const novas = p.linhas.filter(l => !l.jaLancada).length;
+  const semCod = p.linhas.filter(l => l.semCodigo).length;
+
+  document.getElementById("tab-planilha").innerHTML = `
+    <div class="alert ${p.conferencia.length ? "alert-warn" : "alert-info"}">
+      <span>${p.linhas.length} linha(s) montadas &mdash; <b>${novas}</b> ainda nao lancadas na planilha.
+      ${p.conferencia.length ? `<b>${p.conferencia.length}</b> divergencia(s) contra o que ja esta lancado (aba Divergencias).` : "Nenhuma divergencia contra o que ja esta lancado."}
+      ${semCod ? ` <b>${semCod}</b> sem codigo de cliente conhecido.` : ""}
+      VT/VR apurado do demonstrativo em <b>${p.linhas.filter(l => l.origemVtVr === "demonstrativo").length}</b> nota(s).</span>
+    </div>
+    ${p.linhas.length > LIMITE_TELA ? `<div class="alert alert-info"><span>Mostrando ${LIMITE_TELA} de ${p.linhas.length} &mdash; o arquivo traz todas.</span></div>` : ""}
+    <div class="table-wrap"><table>
+      <thead><tr>${cab.map((c, i) =>
+        `<th${i >= 6 ? ' style="text-align:right"' : ''}>${esc(c)}</th>`).join("")}<th>Situacao</th></tr></thead>
+      <tbody>${linhas.map(l => `
+        <tr>
+          <td class="mono">${l.seq}</td>
+          <td>${esc(l.empresa)}</td>
+          <td class="mono">${esc(l.nf)}</td>
+          <td>${l.semCodigo ? '<span class="badge badge-warn">sem codigo</span> ' : ""}${esc(l.cliente)}</td>
+          <td class="mono">${esc(dataBR(l.emissao))}</td>
+          <td class="mono">${esc(dataBR(l.vencimento))}</td>
+          ${["taxa","tributo","bruto","liquido","vtvr","exames","crachas","infoponto","epi","pesquisa"]
+            .map(k => `<td class="num">${l[k] ? brl(l[k]) : "<span class='muted'>—</span>"}</td>`).join("")}
+          <td>${l.jaLancada ? '<span class="badge badge-info">ja lancada</span>' : '<span class="badge badge-ok">nova</span>'}</td>
+        </tr>`).join("")}</tbody>
+    </table></div>`;
 }
 
 /* ── renderizacao ────────────────────────────────────────────── */
@@ -1067,13 +1492,14 @@ function renderConciliacao() {
     <div class="metric ${r.problemas.length ? "err" : "ok"}">
       <div class="metric-label">A conferir</div><div class="metric-value">${r.problemas.length}</div></div>`;
 
-  renderControle();
+  renderPlanilha();
+  renderPivot();
   renderEventos();
   renderDetalhe();
   renderProblemas();
 }
 
-function renderControle() {
+function renderPivot() {
   const r = ST.res;
   const cols = r.colunas;
   const linhas = r.notas.slice(0, LIMITE_TELA);
@@ -1172,7 +1598,7 @@ function renderProblemas() {
 function aba(btn) {
   document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
   btn.classList.add("active");
-  ["controle", "eventos", "detalhe", "probs"].forEach(t =>
+  ["planilha", "controle", "eventos", "detalhe", "probs"].forEach(t =>
     document.getElementById("tab-" + t).classList.toggle("hidden", t !== btn.dataset.tab));
 }
 
@@ -1354,8 +1780,18 @@ function nomeArquivo(ext) {
 
 function exportarXLSX() {
   const r = ST.res;
+  const abaMes = "Controle_" + r.comp.label.replace("/", ".");
   const abas = [
-    { nome: "Controle_Faturamento", linhas: [colsControle(), ...linhasControle()] },
+    { nome: abaMes, linhas: [cabecalhoPlanilha(), ...linhasParaPlanilha()] },
+    { nome: "Conferencia", linhas: [
+        ["Empresa", "Numero NF", "Cliente", "Coluna", "Na planilha", "Calculado pela nota"],
+        ...r.planilha.conferencia.map(c => [c.empresa, c.nf, c.cliente, c.coluna, c.naPlanilha, c.calculado])
+      ] },
+    { nome: "Eventos_Sem_Coluna", linhas: [
+        ["Numero NF", "Evento", "Valor"],
+        ...r.planilha.semColunaGeral.map(s => [s.nf, s.rotulo, s.valor])
+      ] },
+    { nome: "Controle_Detalhado", linhas: [colsControle(), ...linhasControle()] },
     { nome: "Eventos_Detalhe", linhas: [
         ["Competencia", "Numero NF", "Data Emissao", "Cliente", "CNPJ/CPF", "Evento",
          "Valor do Evento", "Valor da NF", "Status", "ID_Unico"],
@@ -1411,7 +1847,7 @@ function exportarXLSX() {
 }
 
 function exportarCSV() {
-  const linhas = [colsControle(), ...linhasControle()];
+  const linhas = [cabecalhoPlanilha(), ...linhasParaPlanilha()];
   const csv = linhas.map(l => l.map(c => {
     const s = String(c == null ? "" : c);
     return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
@@ -1421,7 +1857,7 @@ function exportarCSV() {
 }
 
 function copiarLinhas() {
-  const tsv = [colsControle(), ...linhasControle()]
+  const tsv = [cabecalhoPlanilha(), ...linhasParaPlanilha()]
     .map(l => l.map(c => String(c == null ? "" : c).replace(/\t/g, " ")).join("\t")).join("\n");
   const ok = () => toast("Linhas copiadas - cole na Controle de Faturamento");
   if (navigator.clipboard && window.isSecureContext) {
@@ -1441,6 +1877,7 @@ function copiarFallback(texto, ok) {
 /* ── inicializacao ──────────────────────────────────────────── */
 
 ligarDrop("drop-xml", "in-xml", receberXML);
+ligarDrop("drop-ctr", "in-ctr", receberControle);
 ligarDrop("drop-dem", "in-dem", receberDem);
 
 ["f-comp", "f-tol", "f-base"].forEach(id =>
