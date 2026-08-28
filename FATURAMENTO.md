@@ -149,8 +149,37 @@ Rodando contra a planilha real, **linhas trocadas entre si**:
 | 27293 ↔ 27294 | valores invertidos |
 | 27309 → 27310 → 27311 | valores deslocados uma linha (o de cada NF está na seguinte) |
 | 27434 ↔ 27435 | valores invertidos |
+| 27433 | lançada duas vezes, linhas idênticas |
 
 Mais quatro notas (27366 a 27369) com `EMISSAO` um dia antes do que o XML declara.
+
+## Notas que só têm rateio (NDB)
+
+A NDB não emite NFSe: a nota dela chega só como demonstrativo `.xlsx`. A ferramenta monta a
+linha inteira a partir do rateio — `VALOR BRUTO` e `VALOR LIQ.BOLETO` do *Total Geral*,
+`VALOR TAXA` da coluna *Taxa*, `TRIBUTO` do *Tributo Fiscal*, e as verbas distribuídas nas
+colunas pelo de-para `VERBAS_COLUNA`.
+
+O demonstrativo não diz a que empresa pertence (o cabeçalho traz sempre a AST), então a
+empresa é deduzida da própria planilha: pelo número da NF já lançado, ou pela faixa de
+numeração de cada empresa (AST 27226–27435, NDB 205753–205779, PINHAL 850–854).
+
+Conferido nas duas notas reais:
+
+| NF | Bruto | Decomposição |
+|---|---|---|
+| 205771 | 5.179,97 | CRACHAS 440,00 + EPI 4.487,97 + PESQUISA 252,00 |
+| 205772 | 30.106,80 | VT/VR 28.603,30 + EXAMES 1.275,50 + PESQUISA 228,00 |
+
+Ambas fecham exatamente com o Total Geral. Verba que não casa com nenhuma regra não é
+chutada em coluna nenhuma: vai para a aba `Eventos_Sem_Coluna`.
+
+## A saída é a aba inteira, não só o que foi gerado
+
+Linhas já lançadas que a ferramenta não conseguiu reproduzir — sem XML e sem demonstrativo —
+são copiadas como estavam e listadas em `Linhas_Preservadas`. Assim a aba pode ser colada
+inteira sem perder nada. Linhas repetidas na planilha atual saem uma vez só e são apontadas
+em `Linhas_Repetidas`.
 
 ## Ajustando às suas colunas
 

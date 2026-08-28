@@ -742,12 +742,27 @@ async function lerXLSX(buffer) {
    termina num "Total do CCusto". As colunas de evento sao as que
    comecam com o codigo da verba (ex.: "002-SALARIO MES (Valor)"). */
 
-// As verbas de vale-transporte / refeicao / cesta do demonstrativo. E daqui
-// que sai o VT/VR da planilha: a discriminacao da nota so reproduz esse valor
-// quando a nota o agrupa explicitamente.
-const VERBAS_VTVR = /VALETRANSPORTE|VALEREFEICAO|VALEALIMENTACAO|REFEITORIO|CESTABASICA|ALIMENTACAO|TRANSPORTE/;
+// De-para verba do demonstrativo -> coluna da planilha. A ordem importa:
+// vale a primeira regra que casar. O codigo da verba e retirado antes da
+// comparacao ("208-SINDICANCIA -STHAR" vira "SINDICANCIASTHAR").
+// Verba que nao casar com nenhuma regra nao e chutada em coluna nenhuma:
+// vai para a aba Eventos_Sem_Coluna.
+const VERBAS_COLUNA = [
+  { rx: /SINDICANCIA|PESQUISACADASTRAL|PESQUISASCADASTRAIS/,        col: "pesquisa"  },
+  { rx: /CRACHA/,                                                    col: "crachas"   },
+  { rx: /INFOPONTO/,                                                 col: "infoponto" },
+  { rx: /EXAME/,                                                     col: "exames"    },
+  { rx: /VALETRANSPORTE|VALEREFEICAO|VALEALIMENTACAO|REFEITORIO|CESTABASICA|ALIMENTACAO|TRANSPORTE/, col: "vtvr" },
+  { rx: /UNIFORME|EPI|SAPATO|BOTINA|BOTA|LUVA|OCULOS|CAMISETA|COLETE|PROTETOR|CREME|MASCARA|AVENTAL|CALCA|BONE|JALECO|CINTO|CAPACETE|PERNEIRA|BLUSA|AGASALHO|TOUCA/, col: "epi" }
+];
 
-const DEM_TOTAIS = { "SUBTOTAL":"subTotal", "ISS":"iss", "TRIBUTOFISCAL":"tributoFiscal",
+function colunaDaVerba(chave) {
+  const nome = String(chave).replace(/^\d+/, "");
+  const m = VERBAS_COLUNA.find(x => x.rx.test(nome));
+  return m ? m.col : null;
+}
+
+const DEM_TOTAIS = { "TAXA":"taxa", "SUBTOTAL":"subTotal", "ISS":"iss", "TRIBUTOFISCAL":"tributoFiscal",
                      "TOTALGERAL":"totalGeral", "RETENCOES":"retencoes", "TOTALLIQUIDO":"totalLiquido" };
 
 function cel(linha, i) { return (linha && linha[i] != null) ? linha[i] : ""; }
@@ -783,7 +798,8 @@ function lerDemonstrativo(matriz, arquivo) {
   }
   if (!nf) return { ok:false, erro:"nao achei o numero da NF no titulo" };
 
-  const acumulado = new Map();      // chave -> {rotulo, valor}
+  const acumulado = new Map();      // verbas somadas dos blocos de centro de custo
+  const totalVerbas = new Map();    // verbas lidas da linha "Total da NF"
   const centros = [];
   const totalNF = {};
   let mapa = null, ccAtual = null, blocos = 0;
@@ -825,6 +841,7 @@ function lerDemonstrativo(matriz, arquivo) {
       Object.keys(mapa.totais).forEach(nome => totalNF[nome] = toNum(cel(linha, mapa.totais[nome])));
       const qtd = /\((\d+)\s*Funcion/i.exec(c0);
       totalNF.funcionarios = qtd ? Number(qtd[1]) : null;
+      somar(mapa, linha).forEach((o, k) => totalVerbas.set(k, o));
       continue;
     }
 
@@ -834,15 +851,20 @@ function lerDemonstrativo(matriz, arquivo) {
   }
 
   if (!blocos) return { ok:false, erro:"nao achei o cabecalho de colunas" };
+  if (!totalVerbas.size && !acumulado.size) return { ok:false, erro:"nao achei os totais das verbas" };
 
-  const eventos = [...acumulado.entries()]
+  const fonte = totalVerbas.size ? totalVerbas : acumulado;
+  const eventos = [...fonte.entries()]
     .map(([chave, o]) => ({ chave, rotulo: o.rotulo, valor: round2(o.valor) }))
     .sort((a, b) => b.valor - a.valor);
 
-  // codigo da verba fora da comparacao: "671-DESCONTO VALE-TRANSPORTE..." -> "DESCONTOVALETRANSPORTE..."
-  const vtvr = round2(eventos
-    .filter(e => VERBAS_VTVR.test(e.chave.replace(/^\d+/, "")))
-    .reduce((a, e) => a + e.valor, 0));
+  const porColuna = { vtvr:0, exames:0, crachas:0, infoponto:0, epi:0, pesquisa:0 };
+  const semColuna = [];
+  eventos.forEach(e => {
+    const c = colunaDaVerba(e.chave);
+    if (c) porColuna[c] = round2(porColuna[c] + e.valor);
+    else semColuna.push({ rotulo: e.rotulo, valor: e.valor });
+  });
 
   // sem a linha "Total da NF", soma os centros de custo
   if (totalNF.totalGeral == null) {
@@ -853,7 +875,9 @@ function lerDemonstrativo(matriz, arquivo) {
 
   return { ok:true, dem: {
     arquivo, nf, nfKey: normNF(nf), emissao, cliente, ds,
-    eventos, centros, vtvr,
+    eventos, centros, porColuna, semColuna,
+    vtvr: porColuna.vtvr,
+    taxa: round2(totalNF.taxa || 0),
     subTotal: round2(totalNF.subTotal || 0),
     iss: round2(totalNF.iss || 0),
     tributoFiscal: round2(totalNF.tributoFiscal || 0),
@@ -1132,6 +1156,7 @@ async function receberControle(files) {
   };
 
   aprenderClientes();
+  aprenderEmpresas();
   renderControle();
   ST.res = null;
   renderConciliacao();
@@ -1169,6 +1194,40 @@ function aprenderClientes() {
 
 function chaveNota(n) { return String(n.empresa || "").toUpperCase() + "|" + normNF(n.numero); }
 
+// A NDB nao emite XML: a nota dela chega so como demonstrativo, que nao diz
+// a que empresa pertence. A empresa e entao deduzida da propria planilha --
+// pelo numero da NF, ou pela faixa de numeracao de cada empresa.
+function aprenderEmpresas() {
+  ST.nfEmpresa = new Map();
+  ST.faixas = {};
+  if (!ST.controle) return;
+  ST.controle.linhas.forEach(l => {
+    const emp = normTxt(cel(l, 1)).toUpperCase();
+    const nf = normNF(cel(l, 2));
+    if (!emp || !nf) return;
+    ST.nfEmpresa.set(nf, emp);
+    const n = Number(nf);
+    if (!isFinite(n)) return;
+    const f = ST.faixas[emp] || { min: n, max: n };
+    f.min = Math.min(f.min, n); f.max = Math.max(f.max, n);
+    ST.faixas[emp] = f;
+  });
+}
+
+function empresaDaNF(nf) {
+  const k = normNF(nf);
+  if (ST.nfEmpresa && ST.nfEmpresa.has(k)) return ST.nfEmpresa.get(k);
+  const n = Number(k);
+  if (isFinite(n) && ST.faixas) {
+    // margem de 10% na faixa, para a NF nova do mes que ainda nao foi lancada
+    for (const emp of Object.keys(ST.faixas)) {
+      const f = ST.faixas[emp], folga = Math.max(50, (f.max - f.min) * 0.1);
+      if (n >= f.min - folga && n <= f.max + folga) return emp;
+    }
+  }
+  return "";
+}
+
 function renderControle() {
   const c = ST.controle;
   document.getElementById("ctr-resumo").textContent = c
@@ -1203,6 +1262,35 @@ function valoresPorColuna(nota) {
   return { v, semColuna };
 }
 
+// "00448-001-01 EDITORA FTD S A - GUARULHOS" -> codigo 00448 + nome
+function clienteDoDemonstrativo(txtCliente) {
+  const s = normTxt(txtCliente);
+  const m = /^(\S+)\s+(.*)$/.exec(s);
+  if (!m) return { codigo: "", nome: s };
+  return { codigo: (m[1].split("-")[0] || "").trim(), nome: m[2].trim() };
+}
+
+function linhaDoDemonstrativo(dem, seq) {
+  const c = clienteDoDemonstrativo(dem.cliente);
+  const emissao = paraISO(dem.emissao);
+  const p = dem.porColuna;
+  return {
+    seq,
+    empresa: empresaDaNF(dem.nf),
+    nf: dem.nf,
+    cliente: montarCliente(c.codigo, c.nome),
+    codigoCliente: c.codigo,
+    emissao,
+    vencimento: emissao,                       // sem XML nao ha vencimento declarado
+    taxa: dem.taxa, tributo: dem.tributoFiscal,
+    bruto: dem.totalGeral, liquido: dem.totalGeral,
+    vtvr: p.vtvr, origemVtVr: "demonstrativo",
+    exames: p.exames, crachas: p.crachas, infoponto: p.infoponto,
+    epi: p.epi, pesquisa: p.pesquisa,
+    salarios: 0, semColuna: dem.semColuna, origem: "demonstrativo"
+  };
+}
+
 function linhaControle(nota, seq, dem) {
   const { v, semColuna } = valoresPorColuna(nota);
   const dp = (ST.dePara || {})[nota.doc];
@@ -1220,7 +1308,7 @@ function linhaControle(nota, seq, dem) {
     bruto: round2(nota.valorServicos), liquido: round2(nota.valorLiquido),
     vtvr, origemVtVr: dem ? "demonstrativo" : "nota", exames: v.exames, crachas: v.crachas,
     infoponto: v.infoponto, epi: v.epi, pesquisa: v.pesquisa,
-    salarios: v.salarios, semColuna
+    salarios: v.salarios, origem: "nota", semColuna
   };
 }
 
@@ -1284,13 +1372,15 @@ function conciliar() {
     });
   });
 
-  // demonstrativo sem nota correspondente
+  // Demonstrativo sem XML nao e erro: a NDB fatura so por rateio. So vira
+  // divergencia se a empresa dele nao puder ser identificada.
   ST.demos.forEach(d => {
     if (usados.has(d.nfKey)) return;
+    if (empresaDaNF(d.nf)) return;
     problemas.push({
-      nf: d.nf, cliente: d.cliente, status: "SEM NF",
-      valorNF: 0, soma: d.totalGeral, diferenca: d.totalGeral,
-      detalhe: "Demonstrativo sem a NF correspondente no XML (" + d.arquivo + ")"
+      nf: d.nf, cliente: d.cliente, status: "EMPRESA INDEFINIDA",
+      valorNF: 0, soma: d.totalGeral, diferenca: 0,
+      detalhe: "Demonstrativo sem XML e sem empresa identificavel - carregue a planilha de controle (" + d.arquivo + ")"
     });
   });
 
@@ -1356,23 +1446,35 @@ const CAMPOS_CONFERE = [
 function montarPlanilha() {
   const tol = tolerancia();
   const existentes = new Map();
+  const duplicadas = [];
   if (ST.controle) {
     ST.controle.linhas.forEach(l => {
       const k = normTxt(cel(l, 1)).toUpperCase() + "|" + normNF(cel(l, 2));
+      if (existentes.has(k)) duplicadas.push({ chave: k, cliente: normTxt(cel(l, 3)), valor: toNum(cel(l, 8)) });
       existentes.set(k, l);
     });
   }
 
-  const ordenadas = ST.notas.slice().sort((a, b) => {
-    const e = String(a.empresa || "").localeCompare(String(b.empresa || ""));
-    return e !== 0 ? e : (Number(normNF(a.numero)) - Number(normNF(b.numero)));
+  // notas do XML + demonstrativos que nao tem XML nenhum (caso da NDB)
+  const itens = ST.notas.map(n => ({
+    nota: n, dem: ST.demos.find(d => d.nfKey === normNF(n.numero)) || null,
+    empresa: String(n.empresa || "").toUpperCase(), nfKey: normNF(n.numero)
+  }));
+  ST.demos.forEach(d => {
+    if (ST.notas.some(n => normNF(n.numero) === d.nfKey)) return;
+    itens.push({ nota: null, dem: d, empresa: empresaDaNF(d.nf), nfKey: d.nfKey });
+  });
+
+  itens.sort((a, b) => {
+    const e = a.empresa.localeCompare(b.empresa);
+    return e !== 0 ? e : (Number(a.nfKey) - Number(b.nfKey));
   });
 
   const linhas = [], conferencia = [], semColunaGeral = [];
-  ordenadas.forEach((nota, i) => {
-    const dem = ST.demos.find(d => d.nfKey === normNF(nota.numero)) || null;
-    const lc = linhaControle(nota, i + 1, dem);
-    const k = String(nota.empresa || "").toUpperCase() + "|" + normNF(nota.numero);
+  itens.forEach((it, i) => {
+    const nota = it.nota;
+    const lc = nota ? linhaControle(nota, i + 1, it.dem) : linhaDoDemonstrativo(it.dem, i + 1);
+    const k = lc.empresa.toUpperCase() + "|" + normNF(lc.nf);
     const atual = existentes.get(k) || null;
     lc.jaLancada = !!atual;
     lc.semCodigo = !lc.codigoCliente;
@@ -1396,17 +1498,17 @@ function montarPlanilha() {
           mostraP = p; mostraC = x;
         }
         if (!igual) conferencia.push({
-          empresa: nota.empresa, nf: nota.numero, cliente: nota.cliente,
+          empresa: lc.empresa, nf: lc.nf, cliente: nota ? nota.cliente : lc.cliente,
           coluna: c.rotulo, naPlanilha: mostraP, calculado: mostraC
         });
       });
     }
 
-    lc.semColuna.forEach(sc => semColunaGeral.push({ nf: nota.numero, rotulo: sc.rotulo, valor: sc.valor }));
+    (lc.semColuna || []).forEach(sc => semColunaGeral.push({ nf: lc.nf, rotulo: sc.rotulo, valor: sc.valor }));
     linhas.push(lc);
   });
 
-  return { linhas, conferencia, semColunaGeral, existentes };
+  return { linhas, conferencia, semColunaGeral, existentes, duplicadas };
 }
 
 function cabecalhoPlanilha() {
@@ -1419,8 +1521,12 @@ function cabecalhoPlanilha() {
 function linhasParaPlanilha() {
   const p = ST.res.planilha;
   const largura = Math.max(cabecalhoPlanilha().length, CAMPOS_CONTROLE.length);
-  return p.linhas.map(l => {
-    const atual = p.existentes.get(String(l.empresa).toUpperCase() + "|" + normNF(l.nf));
+  const geradas = new Set();
+
+  const saida = p.linhas.map(l => {
+    const k = String(l.empresa).toUpperCase() + "|" + normNF(l.nf);
+    geradas.add(k);
+    const atual = p.existentes.get(k);
     const linha = new Array(largura).fill("");
     CAMPOS_CONTROLE.forEach((c, i) => {
       let v = l[c.chave];
@@ -1431,6 +1537,30 @@ function linhasParaPlanilha() {
       linha[i] = (atual[i] == null ? "" : atual[i]);
     return linha;
   });
+
+  // linhas ja lancadas que a ferramenta nao reproduziu (sem XML e sem
+  // demonstrativo) seguem intactas, para a aba poder ser colada inteira
+  p.existentes.forEach((atual, k) => {
+    if (geradas.has(k)) return;
+    const linha = new Array(largura).fill("");
+    for (let i = 0; i < largura; i++) {
+      let v = atual[i];
+      if ((i === 4 || i === 5) && v !== "" && v != null) v = dataBR(paraISO(v)) || v;
+      linha[i] = (v == null ? "" : v);
+    }
+    saida.push(linha);
+  });
+
+  saida.forEach((l, i) => l[0] = i + 1);   // renumera a coluna Nº
+  return saida;
+}
+
+function linhasPreservadas() {
+  const p = ST.res.planilha;
+  const geradas = new Set(p.linhas.map(l => String(l.empresa).toUpperCase() + "|" + normNF(l.nf)));
+  const fora = [];
+  p.existentes.forEach((linha, k) => { if (!geradas.has(k)) fora.push({ chave:k, linha }); });
+  return fora;
 }
 
 function renderPlanilha() {
@@ -1439,12 +1569,15 @@ function renderPlanilha() {
   const linhas = p.linhas.slice(0, LIMITE_TELA);
   const novas = p.linhas.filter(l => !l.jaLancada).length;
   const semCod = p.linhas.filter(l => l.semCodigo).length;
+  const preservadas = linhasPreservadas().length;
 
   document.getElementById("tab-planilha").innerHTML = `
     <div class="alert ${p.conferencia.length ? "alert-warn" : "alert-info"}">
       <span>${p.linhas.length} linha(s) montadas &mdash; <b>${novas}</b> ainda nao lancadas na planilha.
       ${p.conferencia.length ? `<b>${p.conferencia.length}</b> divergencia(s) contra o que ja esta lancado (aba Divergencias).` : "Nenhuma divergencia contra o que ja esta lancado."}
       ${semCod ? ` <b>${semCod}</b> sem codigo de cliente conhecido.` : ""}
+      ${preservadas ? `<b>${preservadas}</b> linha(s) ja lancadas que a ferramenta nao reproduziu (sem XML e sem demonstrativo) seguem intactas na saida.` : ""}
+      ${p.duplicadas.length ? `<b>${p.duplicadas.length}</b> linha(s) repetida(s) na planilha atual (${esc(p.duplicadas.map(d => d.chave).join(", "))}) &mdash; a saida traz uma so.` : ""}
       VT/VR apurado do demonstrativo em <b>${p.linhas.filter(l => l.origemVtVr === "demonstrativo").length}</b> nota(s).</span>
     </div>
     ${p.linhas.length > LIMITE_TELA ? `<div class="alert alert-info"><span>Mostrando ${LIMITE_TELA} de ${p.linhas.length} &mdash; o arquivo traz todas.</span></div>` : ""}
@@ -1461,7 +1594,7 @@ function renderPlanilha() {
           <td class="mono">${esc(dataBR(l.vencimento))}</td>
           ${["taxa","tributo","bruto","liquido","vtvr","exames","crachas","infoponto","epi","pesquisa"]
             .map(k => `<td class="num">${l[k] ? brl(l[k]) : "<span class='muted'>—</span>"}</td>`).join("")}
-          <td>${l.jaLancada ? '<span class="badge badge-info">ja lancada</span>' : '<span class="badge badge-ok">nova</span>'}</td>
+          <td>${l.jaLancada ? '<span class="badge badge-info">ja lancada</span>' : '<span class="badge badge-ok">nova</span>'}${l.origem === "demonstrativo" ? ' <span class="badge badge-warn">so rateio</span>' : ""}</td>
         </tr>`).join("")}</tbody>
     </table></div>`;
 }
@@ -1470,7 +1603,7 @@ function renderPlanilha() {
 
 const BADGE = {
   "OK": "badge-ok", "DISCRIMINACAO NAO FECHA": "badge-err", "SEM EVENTOS": "badge-warn",
-  "DEMONSTRATIVO DIVERGENTE": "badge-err", "SEM NF": "badge-err", "FORA DA COMPETENCIA": "badge-warn"
+  "DEMONSTRATIVO DIVERGENTE": "badge-err", "EMPRESA INDEFINIDA": "badge-warn", "FORA DA COMPETENCIA": "badge-warn"
 };
 const LIMITE_TELA = 250;
 
@@ -1786,6 +1919,15 @@ function exportarXLSX() {
     { nome: "Conferencia", linhas: [
         ["Empresa", "Numero NF", "Cliente", "Coluna", "Na planilha", "Calculado pela nota"],
         ...r.planilha.conferencia.map(c => [c.empresa, c.nf, c.cliente, c.coluna, c.naPlanilha, c.calculado])
+      ] },
+    { nome: "Linhas_Repetidas", linhas: [
+        ["Empresa|NF", "Cliente", "Valor Bruto", "Observacao"],
+        ...r.planilha.duplicadas.map(d => [d.chave, d.cliente, d.valor,
+          "lancada mais de uma vez na planilha atual - a saida traz uma linha so"])
+      ] },
+    { nome: "Linhas_Preservadas", linhas: [
+        ["Empresa|NF", "Motivo"],
+        ...linhasPreservadas().map(x => [x.chave, "sem XML e sem demonstrativo - copiada como estava"])
       ] },
     { nome: "Eventos_Sem_Coluna", linhas: [
         ["Numero NF", "Evento", "Valor"],
