@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conector de Faturamento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blue:      #1A56DB;
+  --blue-dark: #1341A8;
+  --blue-light:#EEF3FF;
+  --green:     #057A55;
+  --green-bg:  #DEF7EC;
+  --amber:     #92400E;
+  --amber-bg:  #FEF3C7;
+  --red:       #9B1C1C;
+  --red-bg:    #FDE8E8;
+  --gray-50:   #F9FAFB;
+  --gray-100:  #F3F4F6;
+  --gray-200:  #E5E7EB;
+  --gray-300:  #D1D5DB;
+  --gray-400:  #9CA3AF;
+  --gray-500:  #6B7280;
+  --gray-700:  #374151;
+  --gray-900:  #111827;
+  --white:     #FFFFFF;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.05);
+  --shadow:    0 1px 3px rgba(0,0,0,.1), 0 1px 2px rgba(0,0,0,.06);
+  --radius-sm: 6px;
+  --radius:    10px;
+  --radius-lg: 14px;
+  --font: 'DM Sans', sans-serif;
+  --mono: 'DM Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; }
+body {
+  font-family: var(--font);
+  background: var(--gray-100);
+  color: var(--gray-900);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.topbar {
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-200);
+  padding: 0 1.5rem; height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 50;
+}
+.topbar-brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; }
+.brand-icon {
+  width: 32px; height: 32px; background: var(--blue);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+}
+.main { padding: 1.5rem; max-width: 1120px; margin: 0 auto; width: 100%; }
+
+.card {
+  background: var(--white); border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg); padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem; box-shadow: var(--shadow-sm);
+}
+.card-title {
+  font-size: 14px; font-weight: 600; margin-bottom: 1rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.card-subtitle { font-size: 12px; font-weight: 400; color: var(--gray-500); }
+.step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--blue-light); color: var(--blue);
+  font-size: 11px; font-weight: 600; margin-right: 8px;
+}
+.step-num.done { background: var(--green-bg); color: var(--green); }
+
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.form-group { margin-bottom: 12px; }
+label { display: block; font-size: 12px; font-weight: 500; color: var(--gray-700); margin-bottom: 5px; }
+.form-control {
+  width: 100%; padding: 8px 10px; font-family: var(--font); font-size: 13px;
+  border: 1px solid var(--gray-300); border-radius: var(--radius-sm);
+  background: var(--white); color: var(--gray-900);
+}
+.form-control:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-light); }
+.hint { font-size: 11px; color: var(--gray-500); margin-top: 4px; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 16px; font-family: var(--font); font-size: 13px; font-weight: 500;
+  border: 1px solid transparent; border-radius: var(--radius-sm);
+  cursor: pointer; transition: background .15s;
+}
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-primary { background: var(--blue); color: var(--white); }
+.btn-primary:hover:not(:disabled) { background: var(--blue-dark); }
+.btn-ghost { background: var(--white); border-color: var(--gray-300); color: var(--gray-700); }
+.btn-ghost:hover:not(:disabled) { background: var(--gray-50); }
+.btn-sm { padding: 6px 11px; font-size: 12px; }
+
+.drop {
+  border: 1.5px dashed var(--gray-300); border-radius: var(--radius);
+  padding: 1.5rem; text-align: center; background: var(--gray-50);
+  cursor: pointer; transition: border-color .15s, background .15s;
+}
+.drop:hover, .drop.over { border-color: var(--blue); background: var(--blue-light); }
+.drop-title { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+.drop-sub { font-size: 11px; color: var(--gray-500); }
+
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 10px; margin-bottom: 1rem; }
+.metric { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 12px 14px; }
+.metric-label { font-size: 11px; color: var(--gray-500); margin-bottom: 4px; }
+.metric-value { font-size: 18px; font-weight: 600; font-family: var(--mono); }
+.metric.ok    .metric-value { color: var(--green); }
+.metric.warn  .metric-value { color: var(--amber); }
+.metric.err   .metric-value { color: var(--red); }
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--gray-200); border-radius: var(--radius); }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th {
+  background: var(--gray-50); text-align: left; padding: 9px 12px;
+  font-weight: 600; color: var(--gray-700); white-space: nowrap;
+  border-bottom: 1px solid var(--gray-200);
+}
+td { padding: 9px 12px; border-bottom: 1px solid var(--gray-100); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--gray-50); }
+td.num { font-family: var(--mono); text-align: right; white-space: nowrap; }
+td.mono { font-family: var(--mono); white-space: nowrap; }
+tfoot td { font-weight: 600; background: var(--gray-50); border-top: 1px solid var(--gray-200); }
+
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 99px;
+  font-size: 10px; font-weight: 600; white-space: nowrap;
+}
+.badge-ok   { background: var(--green-bg); color: var(--green); }
+.badge-warn { background: var(--amber-bg); color: var(--amber); }
+.badge-err  { background: var(--red-bg);   color: var(--red); }
+.badge-info { background: var(--blue-light); color: var(--blue); }
+
+.alert { padding: 10px 14px; border-radius: var(--radius); font-size: 12px; margin-bottom: 12px; display: flex; gap: 8px; }
+.alert-warn { background: var(--amber-bg); color: var(--amber); }
+.alert-err  { background: var(--red-bg);   color: var(--red); }
+.alert-info { background: var(--blue-light); color: var(--blue-dark); }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--gray-200); margin-bottom: 1rem; flex-wrap: wrap; }
+.tab {
+  padding: 8px 14px; font-size: 13px; font-weight: 500; color: var(--gray-500);
+  border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent;
+}
+.tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+.file-list { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; }
+.file-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 7px 11px; background: var(--gray-50); border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm); font-size: 12px;
+}
+.file-name { font-family: var(--mono); font-size: 11px; color: var(--gray-700); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.muted { color: var(--gray-500); }
+.hidden { display: none !important; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 1rem; }
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: var(--gray-900); color: var(--white); padding: 10px 18px;
+  border-radius: var(--radius); font-size: 13px; box-shadow: var(--shadow-md);
+  z-index: 100; opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-brand">
+    <div class="brand-icon">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+      </svg>
+    </div>
+    Conector de Faturamento
+  </div>
+  <span class="badge badge-info" id="top-comp">08/2026</span>
+</header>
+
+<main class="main">
+
+  <div class="alert alert-err hidden" id="lib-warn">
+    <span>Este navegador nao suporta a leitura de <b>.xlsx</b>. Salve o rateio como <b>CSV</b> &mdash; o restante funciona normalmente.</span>
+  </div>
+
+  <!-- PASSO 1 -->
+  <section class="card">
+    <div class="card-title"><span><span class="step-num">1</span>Competencia</span></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="f-comp">Mes de referencia</label>
+        <input class="form-control" id="f-comp" type="month" value="2026-08">
+        <div class="hint">Usado como chave do lote e para conferir a data de emissao das notas.</div>
+      </div>
+      <div class="form-group">
+        <label for="f-tol">Tolerancia de arredondamento (R$)</label>
+        <input class="form-control" id="f-tol" type="number" step="0.01" min="0" value="0.02">
+        <div class="hint">Diferenca aceita entre a soma do rateio e o total da NF.</div>
+      </div>
+      <div class="form-group">
+        <label for="f-fora">Notas fora da competencia</label>
+        <select class="form-control" id="f-fora">
+          <option value="avisar">Importar e sinalizar</option>
+          <option value="ignorar">Descartar na importacao</option>
+        </select>
+        <div class="hint">Evita que o arquivo do mes errado entre no lote.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PASSO 2 -->
+  <section class="card">
+    <div class="card-title">
+      <span><span class="step-num" id="sn-2">2</span>Notas fiscais (XML)</span>
+      <span class="card-subtitle" id="nf-resumo">nenhum arquivo</span>
+    </div>
+    <div class="drop" id="drop-xml">
+      <div class="drop-title">Arraste os XMLs aqui ou clique para selecionar</div>
+      <div class="drop-sub">NFe e NFSe (padrao ABRASF). Pode soltar varios de uma vez.</div>
+    </div>
+    <input type="file" id="in-xml" accept=".xml,text/xml,application/xml" multiple class="hidden">
+    <div class="file-list hidden" id="xml-list"></div>
+    <div class="actions hidden" id="xml-actions">
+      <button class="btn btn-ghost btn-sm" onclick="limparXML()">Limpar notas</button>
+    </div>
+  </section>
+
+  <!-- PASSO 3 -->
+  <section class="card">
+    <div class="card-title">
+      <span><span class="step-num" id="sn-3">3</span>Rateio (Excel ou CSV)</span>
+      <span class="card-subtitle" id="rat-resumo">nenhum arquivo</span>
+    </div>
+    <div class="drop" id="drop-rat">
+      <div class="drop-title">Arraste a planilha de rateio aqui ou clique para selecionar</div>
+      <div class="drop-sub">.xlsx ou .csv &mdash; uma linha por evento.</div>
+    </div>
+    <input type="file" id="in-rat" accept=".xlsx,.csv,text/csv" class="hidden">
+
+    <div class="hidden" id="map-box" style="margin-top:1rem">
+      <div class="alert alert-info">
+        <span>Confira o de-para das colunas. O mapeamento fica salvo neste navegador para os proximos meses.</span>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="m-nf">Numero da NF <span class="muted">(obrigatorio)</span></label>
+          <select class="form-control" id="m-nf" onchange="salvarMap()"></select>
+        </div>
+        <div class="form-group">
+          <label for="m-evento">Evento do rateio <span class="muted">(obrigatorio)</span></label>
+          <select class="form-control" id="m-evento" onchange="salvarMap()"></select>
+        </div>
+        <div class="form-group">
+          <label for="m-valor">Valor do evento <span class="muted">(obrigatorio)</span></label>
+          <select class="form-control" id="m-valor" onchange="salvarMap()"></select>
+        </div>
+        <div class="form-group">
+          <label for="m-cliente">Cliente <span class="muted">(opcional)</span></label>
+          <select class="form-control" id="m-cliente" onchange="salvarMap()"></select>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost btn-sm" onclick="limparRateio()">Limpar rateio</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PASSO 4 -->
+  <section class="card">
+    <div class="card-title">
+      <span><span class="step-num" id="sn-4">4</span>Conciliacao</span>
+      <button class="btn btn-primary btn-sm" id="btn-conc" onclick="conciliar()" disabled>Conciliar</button>
+    </div>
+    <div id="conc-vazio" class="muted" style="font-size:13px">Importe as notas e o rateio para conciliar.</div>
+    <div class="hidden" id="conc-box">
+      <div class="metrics" id="conc-metrics"></div>
+      <div class="tabs">
+        <button class="tab active" data-tab="detalhe" onclick="aba(this)">Detalhe (NF x evento)</button>
+        <button class="tab" data-tab="eventos"  onclick="aba(this)">Consolidado por evento</button>
+        <button class="tab" data-tab="probs"    onclick="aba(this)">Divergencias</button>
+      </div>
+      <div id="tab-detalhe"></div>
+      <div id="tab-eventos" class="hidden"></div>
+      <div id="tab-probs"   class="hidden"></div>
+    </div>
+  </section>
+
+  <!-- PASSO 5 -->
+  <section class="card">
+    <div class="card-title"><span><span class="step-num" id="sn-5">5</span>Preencher a Controle de Faturamento</span></div>
+    <div class="alert alert-info">
+      <span>O arquivo gerado traz 4 abas: <b>Controle_Faturamento</b> (linhas prontas para colar), <b>Consolidado_Eventos</b>, <b>Divergencias</b> e <b>Notas</b>. A coluna <b>ID_Unico</b> e a chave de reimportacao: competencia + NF + evento.</span>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" id="btn-xlsx" onclick="exportarXLSX()" disabled>Baixar .xlsx</button>
+      <button class="btn btn-ghost"  id="btn-csv"  onclick="exportarCSV()"  disabled>Baixar CSV</button>
+      <button class="btn btn-ghost"  id="btn-copy" onclick="copiarLinhas()" disabled>Copiar linhas para colar</button>
+    </div>
+  </section>
+
+  <p class="muted" style="font-size:11px;text-align:center;padding:1rem 0">
+    Processamento 100% local &mdash; nenhum arquivo sai deste navegador.
+  </p>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   CONECTOR DE FATURAMENTO
+   NFe/NFSe (XML) = cabecalho fiscal  |  Rateio (xlsx/csv) = itens
+   Regra central: a soma dos eventos do rateio tem de bater com o
+   total da nota. O que nao bate vira divergencia, nao vira linha.
+   ══════════════════════════════════════════════════════════════ */
+
+const ST = {
+  nfs: [],          // cabecalhos lidos dos XMLs
+  arquivos: [],     // status por arquivo importado
+  rateioRows: [],   // linhas cruas da planilha de rateio
+  headers: [],      // cabecalhos detectados no rateio
+  ratArquivo: "",
+  map: { nf:"", evento:"", valor:"", cliente:"" },
+  res: null         // resultado da conciliacao
+};
+
+const MAP_KEY = "conector_faturamento_map_v1";
+
+/* ── utilitarios ────────────────────────────────────────────── */
+
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove("show"), 2600);
+}
+
+function esc(v) {
+  return String(v == null ? "" : v)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function round2(n) { return Math.round((Number(n) + Number.EPSILON) * 100) / 100; }
+
+function brl(n) {
+  return Number(n || 0).toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
+}
+
+// Aceita numero puro, "1.234,56", "1234.56", "1.500", "R$ 90,00"
+function toNum(v) {
+  if (typeof v === "number") return isFinite(v) ? v : 0;
+  if (v == null) return 0;
+  let s = String(v).trim().replace(/R\$/gi, "").replace(/\s/g, "");
+  if (!s) return 0;
+  const neg = /^\(.*\)$/.test(s) || s.startsWith("-");
+  s = s.replace(/[()\-]/g, "");
+  if (s.includes(",") && s.includes(".")) {
+    s = s.lastIndexOf(",") > s.lastIndexOf(".")
+      ? s.replace(/\./g, "").replace(",", ".")   // 1.234,56
+      : s.replace(/,/g, "");                     // 1,234.56
+  } else if (s.includes(",")) {
+    s = s.replace(",", ".");
+  } else if (/^\d{1,3}(\.\d{3})+$/.test(s)) {
+    s = s.replace(/\./g, "");                    // 1.500 = mil e quinhentos
+  }
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : (neg ? -n : n);
+}
+
+// "000123" e "123" sao a mesma nota
+function normNF(v) {
+  const d = String(v == null ? "" : v).replace(/\D/g, "").replace(/^0+/, "");
+  return d || String(v || "").trim().toUpperCase();
+}
+
+function normTxt(v) { return String(v == null ? "" : v).trim().replace(/\s+/g, " "); }
+
+function compAtual() {
+  const raw = document.getElementById("f-comp").value || "2026-08";
+  const [a, m] = raw.split("-");
+  return { iso: raw, label: m + "/" + a };
+}
+
+function tolerancia() { return Math.abs(toNum(document.getElementById("f-tol").value)) || 0; }
+
+/* ── leitura de XML (NFe e NFSe) ─────────────────────────────── */
+
+function tags(root, name) {
+  const out = [], all = root.getElementsByTagName("*");
+  for (let i = 0; i < all.length; i++) if (all[i].localName === name) out.push(all[i]);
+  return out;
+}
+function tag(root, name) { return tags(root, name)[0] || null; }
+function txt(root, name) { const e = tag(root, name); return e ? normTxt(e.textContent) : ""; }
+function filho(el, name) {
+  if (!el) return null;
+  for (let i = 0; i < el.children.length; i++) if (el.children[i].localName === name) return el.children[i];
+  return null;
+}
+function txtFilho(el, name) { const c = filho(el, name); return c ? normTxt(c.textContent) : ""; }
+
+function lerXML(texto, arquivo) {
+  let doc;
+  try { doc = new DOMParser().parseFromString(texto, "application/xml"); }
+  catch (e) { return { ok:false, erro:"XML ilegivel" }; }
+  if (doc.getElementsByTagName("parsererror").length) return { ok:false, erro:"XML mal formado" };
+
+  const infNFe = tag(doc, "infNFe");
+  if (infNFe) return lerNFe(infNFe, arquivo);
+
+  const infNfse = tag(doc, "InfNfse") || tag(doc, "Nfse") || tag(doc, "CompNfse");
+  if (infNfse) return lerNFSe(infNfse, arquivo);
+
+  if (tag(doc, "infEvento") || tag(doc, "retEvento"))
+    return { ok:false, erro:"Arquivo de evento/cancelamento" };
+
+  return { ok:false, erro:"Layout nao reconhecido" };
+}
+
+function lerNFe(infNFe, arquivo) {
+  const ide  = tag(infNFe, "ide") || infNFe;
+  const dest = tag(infNFe, "dest");
+  const tot  = tag(infNFe, "ICMSTot");
+  const emi  = (txt(ide, "dhEmi") || txt(ide, "dEmi") || "").slice(0, 10);
+  return {
+    ok: true,
+    nf: {
+      modelo:   "NFe",
+      numero:   txt(ide, "nNF"),
+      serie:    txt(ide, "serie"),
+      chave:    (infNFe.getAttribute("Id") || "").replace(/\D/g, ""),
+      emissao:  emi,
+      cliente:  dest ? txt(dest, "xNome") : "",
+      doc:      dest ? (txt(dest, "CNPJ") || txt(dest, "CPF") || txt(dest, "idEstrangeiro")) : "",
+      valor:    tot ? toNum(txt(tot, "vNF")) : 0,
+      arquivo:  arquivo
+    }
+  };
+}
+
+function lerNFSe(inf, arquivo) {
+  // "Numero" tambem existe dentro de Endereco - por isso a busca e escopada
+  let numero = txtFilho(inf, "Numero");
+  if (!numero) {
+    const ident = filho(inf, "IdentificacaoNfse") || tag(inf, "IdentificacaoNfse");
+    if (ident) numero = txtFilho(ident, "Numero");
+  }
+  if (!numero) numero = txt(inf, "NumeroNfse");
+
+  const servico = tag(inf, "Servico");
+  const valores = servico ? tag(servico, "Valores") : tag(inf, "Valores");
+  let valor = 0;
+  if (valores) valor = toNum(txtFilho(valores, "ValorServicos") || txtFilho(valores, "ValorLiquidoNfse"));
+  if (!valor) valor = toNum(txt(inf, "ValorLiquidoNfse") || txt(inf, "ValorServicos"));
+
+  const tomador = tag(inf, "Tomador") || tag(inf, "TomadorServico") || tag(inf, "DadosTomador");
+  let cliente = "", docCli = "";
+  if (tomador) {
+    cliente = txt(tomador, "RazaoSocial") || txt(tomador, "NomeFantasia") || txt(tomador, "xNome");
+    docCli  = txt(tomador, "Cnpj") || txt(tomador, "CNPJ") || txt(tomador, "Cpf") || txt(tomador, "CPF");
+  }
+
+  if (!numero && !valor) return { ok:false, erro:"NFSe sem numero/valor legiveis" };
+
+  return {
+    ok: true,
+    nf: {
+      modelo:   "NFSe",
+      numero:   numero,
+      serie:    txt(inf, "Serie") || "",
+      chave:    txt(inf, "CodigoVerificacao") || "",
+      emissao:  (txt(inf, "DataEmissao") || "").slice(0, 10),
+      cliente:  cliente,
+      doc:      docCli,
+      valor:    valor,
+      arquivo:  arquivo
+    }
+  };
+}
+</script>
+<script>
+/* ── leitor .xlsx nativo ──────────────────────────────────────
+   Usa DecompressionStream do proprio navegador para abrir o ZIP.
+   Sem biblioteca externa: a ferramenta roda offline de ponta a ponta. */
+
+function filhos(el, nome) {
+  const out = [];
+  if (!el) return out;
+  for (let i = 0; i < el.children.length; i++)
+    if (el.children[i].localName === nome) out.push(el.children[i]);
+  return out;
+}
+
+function refColuna(ref) {
+  const m = /^([A-Z]+)/.exec(ref || "");
+  if (!m) return 1;
+  let n = 0;
+  for (let i = 0; i < m[1].length; i++) n = n * 26 + (m[1].charCodeAt(i) - 64);
+  return n;
+}
+
+function abrirZip(buffer) {
+  const dv = new DataView(buffer), u8 = new Uint8Array(buffer);
+  let eocd = -1;
+  const limite = Math.max(0, u8.length - 65558);
+  for (let i = u8.length - 22; i >= limite; i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error("nao parece um arquivo .xlsx valido");
+
+  const total = dv.getUint16(eocd + 10, true);
+  let p = dv.getUint32(eocd + 16, true);
+  const arqs = {};
+  const dec = new TextDecoder();
+
+  for (let n = 0; n < total; n++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) break;
+    const metodo   = dv.getUint16(p + 10, true);
+    const compTam  = dv.getUint32(p + 20, true);
+    const nomeLen  = dv.getUint16(p + 28, true);
+    const extraLen = dv.getUint16(p + 30, true);
+    const comLen   = dv.getUint16(p + 32, true);
+    const off      = dv.getUint32(p + 42, true);
+    const nome     = dec.decode(u8.subarray(p + 46, p + 46 + nomeLen));
+
+    const lNomeLen  = dv.getUint16(off + 26, true);
+    const lExtraLen = dv.getUint16(off + 28, true);
+    const ini = off + 30 + lNomeLen + lExtraLen;
+
+    arqs[nome] = { metodo, dados: u8.subarray(ini, ini + compTam) };
+    p += 46 + nomeLen + extraLen + comLen;
+  }
+  return arqs;
+}
+
+async function textoDoZip(entrada) {
+  if (!entrada) return "";
+  if (entrada.metodo === 0) return new TextDecoder().decode(entrada.dados);
+  if (entrada.metodo !== 8) throw new Error("compactacao nao suportada no .xlsx");
+  if (typeof DecompressionStream === "undefined")
+    throw new Error("navegador sem suporte a leitura de .xlsx - salve o rateio como CSV");
+  const fluxo = new Blob([entrada.dados]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+  return await new Response(fluxo).text();
+}
+
+async function lerXLSX(buffer) {
+  const arqs = abrirZip(buffer);
+  const dp = new DOMParser();
+
+  // textos compartilhados
+  const compart = [];
+  const ssXml = await textoDoZip(arqs["xl/sharedStrings.xml"]);
+  if (ssXml) {
+    const doc = dp.parseFromString(ssXml, "application/xml");
+    tags(doc, "si").forEach(si => compart.push(tags(si, "t").map(t => t.textContent).join("")));
+  }
+
+  // primeira aba, na ordem declarada no workbook
+  let alvo = "xl/worksheets/sheet1.xml";
+  const wbXml   = await textoDoZip(arqs["xl/workbook.xml"]);
+  const relsXml = await textoDoZip(arqs["xl/_rels/workbook.xml.rels"]);
+  if (wbXml && relsXml) {
+    const wb    = dp.parseFromString(wbXml, "application/xml");
+    const rels  = dp.parseFromString(relsXml, "application/xml");
+    const aba   = tags(wb, "sheet")[0];
+    const rid   = aba && (aba.getAttribute("r:id") || aba.getAttribute("id"));
+    const rel   = tags(rels, "Relationship").filter(r => r.getAttribute("Id") === rid)[0];
+    if (rel) {
+      const destino = (rel.getAttribute("Target") || "").replace(/^\/?(xl\/)?/, "");
+      if (destino) alvo = "xl/" + destino;
+    }
+  }
+
+  const shXml = await textoDoZip(arqs[alvo] || arqs["xl/worksheets/sheet1.xml"]);
+  if (!shXml) throw new Error("nao encontrei nenhuma planilha no arquivo");
+
+  const doc  = dp.parseFromString(shXml, "application/xml");
+  const dados = tag(doc, "sheetData");
+  const matriz = [];
+
+  filhos(dados, "row").forEach((row, ordem) => {
+    const iLinha = parseInt(row.getAttribute("r") || (ordem + 1), 10) - 1;
+    const linha = [];
+    filhos(row, "c").forEach(c => {
+      const col = refColuna(c.getAttribute("r"));
+      const t   = c.getAttribute("t");
+      let v = "";
+      if (t === "inlineStr") {
+        v = tags(c, "t").map(x => x.textContent).join("");
+      } else {
+        const vEl = filhos(c, "v")[0];
+        const cru = vEl ? vEl.textContent : "";
+        if (t === "s")                    v = compart[parseInt(cru, 10)] || "";
+        else if (t === "str" || t === "e") v = cru;
+        else                               v = cru === "" ? "" : Number(cru);
+      }
+      linha[col - 1] = v;
+    });
+    matriz[iLinha] = linha;
+  });
+
+  for (let i = 0; i < matriz.length; i++) {
+    if (!matriz[i]) matriz[i] = [];
+    for (let j = 0; j < matriz[i].length; j++)
+      if (matriz[i][j] === undefined) matriz[i][j] = "";
+  }
+  return matriz;
+}
+
+/* ── entrada de arquivos ─────────────────────────────────────── */
+
+function ligarDrop(zonaId, inputId, handler) {
+  const zona = document.getElementById(zonaId);
+  const input = document.getElementById(inputId);
+  zona.onclick = () => input.click();
+  input.onchange = () => { if (input.files.length) handler(Array.from(input.files)); input.value = ""; };
+  ["dragenter", "dragover"].forEach(ev =>
+    zona.addEventListener(ev, e => { e.preventDefault(); zona.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(ev =>
+    zona.addEventListener(ev, e => { e.preventDefault(); zona.classList.remove("over"); }));
+  zona.addEventListener("drop", e => {
+    const fs = Array.from(e.dataTransfer.files || []);
+    if (fs.length) handler(fs);
+  });
+}
+
+function lerTexto(file) {
+  return new Promise(resolve => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(fr.result);
+    fr.onerror = () => resolve("");
+    fr.readAsText(file, "UTF-8");
+  });
+}
+
+/* ── passo 2: XMLs ───────────────────────────────────────────── */
+
+async function receberXML(files) {
+  const comp = compAtual();
+  const descartarFora = document.getElementById("f-fora").value === "ignorar";
+  let novos = 0, ignorados = 0;
+
+  for (const f of files) {
+    if (!/\.xml$/i.test(f.name)) {
+      ST.arquivos.push({ nome:f.name, status:"erro", msg:"nao e .xml" });
+      continue;
+    }
+    const r = lerXML(await lerTexto(f), f.name);
+    if (!r.ok) { ST.arquivos.push({ nome:f.name, status:"erro", msg:r.erro }); continue; }
+
+    const nf = r.nf;
+    nf.foraComp = !!nf.emissao && nf.emissao.slice(0, 7) !== comp.iso;
+    if (nf.foraComp && descartarFora) {
+      ST.arquivos.push({ nome:f.name, status:"erro", msg:"fora de " + comp.label });
+      ignorados++;
+      continue;
+    }
+
+    const dedupe = nf.chave || (nf.modelo + "|" + normNF(nf.numero) + "|" + nf.serie);
+    if (ST.nfs.some(x => (x.chave || (x.modelo + "|" + normNF(x.numero) + "|" + x.serie)) === dedupe)) {
+      ST.arquivos.push({ nome:f.name, status:"dup", msg:"NF " + nf.numero + " ja importada" });
+      continue;
+    }
+
+    ST.nfs.push(nf);
+    ST.arquivos.push({
+      nome: f.name,
+      status: nf.foraComp ? "aviso" : "ok",
+      msg: "NF " + nf.numero + " - " + brl(nf.valor) + (nf.foraComp ? " (fora de " + comp.label + ")" : "")
+    });
+    novos++;
+  }
+
+  renderXML();
+  toast(novos + " nota(s) importada(s)" + (ignorados ? ", " + ignorados + " descartada(s)" : ""));
+}
+
+function renderXML() {
+  const lista = document.getElementById("xml-list");
+  const total = ST.nfs.reduce((a, n) => a + n.valor, 0);
+
+  document.getElementById("nf-resumo").textContent =
+    ST.nfs.length ? ST.nfs.length + " nota(s) - " + brl(total) : "nenhum arquivo";
+  document.getElementById("sn-2").classList.toggle("done", ST.nfs.length > 0);
+
+  if (!ST.arquivos.length) {
+    lista.classList.add("hidden");
+    document.getElementById("xml-actions").classList.add("hidden");
+  } else {
+    lista.classList.remove("hidden");
+    document.getElementById("xml-actions").classList.remove("hidden");
+    const cls = { ok:"badge-ok", aviso:"badge-warn", dup:"badge-info", erro:"badge-err" };
+    const rot = { ok:"OK", aviso:"ATENCAO", dup:"DUPLICADO", erro:"ERRO" };
+    lista.innerHTML = ST.arquivos.map(a => `
+      <div class="file-item">
+        <span class="file-name" title="${esc(a.nome)}">${esc(a.nome)}</span>
+        <span style="display:flex;gap:8px;align-items:center">
+          <span class="muted">${esc(a.msg)}</span>
+          <span class="badge ${cls[a.status]}">${rot[a.status]}</span>
+        </span>
+      </div>`).join("");
+  }
+  atualizarBotoes();
+}
+
+function limparXML() {
+  ST.nfs = []; ST.arquivos = []; ST.res = null;
+  renderXML(); renderConciliacao();
+}
+
+/* ── passo 3: rateio ─────────────────────────────────────────── */
+
+function csvParse(texto) {
+  const sep = (texto.split("\n")[0].match(/;/g) || []).length >
+              (texto.split("\n")[0].match(/,/g) || []).length ? ";" : ",";
+  const linhas = [];
+  let campo = "", linha = [], aspas = false;
+  for (let i = 0; i < texto.length; i++) {
+    const c = texto[i];
+    if (aspas) {
+      if (c === '"') { if (texto[i+1] === '"') { campo += '"'; i++; } else aspas = false; }
+      else campo += c;
+    } else if (c === '"') aspas = true;
+    else if (c === sep) { linha.push(campo); campo = ""; }
+    else if (c === "\n") { linha.push(campo); linhas.push(linha); linha = []; campo = ""; }
+    else if (c !== "\r") campo += c;
+  }
+  if (campo || linha.length) { linha.push(campo); linhas.push(linha); }
+  return linhas.filter(l => l.some(c => String(c).trim() !== ""));
+}
+
+function matrizParaObjetos(matriz) {
+  if (!matriz.length) return { headers: [], rows: [] };
+  // cabecalho = primeira linha com pelo menos 2 celulas preenchidas
+  let hi = 0;
+  for (let i = 0; i < Math.min(matriz.length, 15); i++) {
+    if (matriz[i].filter(c => String(c).trim() !== "").length >= 2) { hi = i; break; }
+  }
+  const headers = matriz[hi].map((h, i) => normTxt(h) || "Coluna " + (i + 1));
+  const rows = matriz.slice(hi + 1)
+    .filter(l => l.some(c => String(c).trim() !== ""))
+    .map(l => { const o = {}; headers.forEach((h, i) => o[h] = l[i]); return o; });
+  return { headers, rows };
+}
+
+async function receberRateio(files) {
+  const f = files[0];
+  let dados;
+
+  if (/\.csv$/i.test(f.name)) {
+    dados = matrizParaObjetos(csvParse(await lerTexto(f)));
+  } else if (/\.xlsx$/i.test(f.name)) {
+    try {
+      dados = matrizParaObjetos(await lerXLSX(await f.arrayBuffer()));
+    } catch (e) {
+      toast("Nao consegui ler o .xlsx: " + e.message);
+      return;
+    }
+  } else {
+    toast("Formato nao suportado - use .xlsx ou .csv (.xls antigo precisa ser convertido).");
+    return;
+  }
+
+  if (!dados.rows.length) { toast("Nao encontrei linhas nessa planilha."); return; }
+
+  ST.headers    = dados.headers;
+  ST.rateioRows = dados.rows;
+  ST.ratArquivo = f.name;
+  ST.res = null;
+
+  montarMapeamento();
+  renderRateio();
+  renderConciliacao();
+  toast(dados.rows.length + " linha(s) de rateio lidas");
+}
+
+const PALPITES = {
+  nf:      [/^n?\.?\s*nf/i, /nota/i, /nfe/i, /nfse/i, /numero.*(nota|nf)/i, /(nf|nota).*numero/i, /doc/i],
+  evento:  [/evento/i, /rubrica/i, /centro/i, /descri/i, /servi/i, /item/i, /conta/i],
+  valor:   [/valor/i, /vlr/i, /^total/i, /montante/i, /^r\$/i],
+  cliente: [/cliente/i, /tomador/i, /raz[ãa]o/i, /nome/i, /sacado/i]
+};
+
+function palpitar(campo, headers, jaUsados) {
+  for (const rx of PALPITES[campo]) {
+    const h = headers.find(x => rx.test(x) && !jaUsados.includes(x));
+    if (h) return h;
+  }
+  return "";
+}
+
+function montarMapeamento() {
+  const salvo = JSON.parse(localStorage.getItem(MAP_KEY) || "null") || {};
+  const usados = [];
+  ["nf", "evento", "valor", "cliente"].forEach(campo => {
+    const sel = document.getElementById("m-" + campo);
+    const opcional = campo === "cliente";
+    sel.innerHTML = (opcional ? '<option value="">— nao usar —</option>' : '<option value="">— selecione —</option>')
+      + ST.headers.map(h => `<option value="${esc(h)}">${esc(h)}</option>`).join("");
+    let escolha = (salvo[campo] && ST.headers.includes(salvo[campo])) ? salvo[campo] : palpitar(campo, ST.headers, usados);
+    if (escolha) usados.push(escolha);
+    sel.value = escolha || "";
+    ST.map[campo] = sel.value;
+  });
+  document.getElementById("map-box").classList.remove("hidden");
+}
+
+function salvarMap() {
+  ["nf", "evento", "valor", "cliente"].forEach(c => ST.map[c] = document.getElementById("m-" + c).value);
+  localStorage.setItem(MAP_KEY, JSON.stringify(ST.map));
+  ST.res = null;
+  renderConciliacao();
+  atualizarBotoes();
+}
+
+function renderRateio() {
+  document.getElementById("rat-resumo").textContent =
+    ST.rateioRows.length ? ST.ratArquivo + " - " + ST.rateioRows.length + " linha(s)" : "nenhum arquivo";
+  document.getElementById("sn-3").classList.toggle("done", ST.rateioRows.length > 0);
+  atualizarBotoes();
+}
+
+function limparRateio() {
+  ST.rateioRows = []; ST.headers = []; ST.ratArquivo = ""; ST.res = null;
+  document.getElementById("map-box").classList.add("hidden");
+  renderRateio(); renderConciliacao();
+}
+
+function mapeamentoCompleto() {
+  return !!(ST.map.nf && ST.map.evento && ST.map.valor);
+}
+
+function atualizarBotoes() {
+  const pronto = ST.nfs.length > 0 && ST.rateioRows.length > 0 && mapeamentoCompleto();
+  document.getElementById("btn-conc").disabled = !pronto;
+  const temRes = !!(ST.res && ST.res.linhas.length);
+  document.getElementById("btn-xlsx").disabled = !temRes;
+  document.getElementById("btn-csv").disabled  = !temRes;
+  document.getElementById("btn-copy").disabled = !temRes;
+}
+</script>
+<script>
+/* ── passo 4: conciliacao ────────────────────────────────────── */
+
+function conciliar() {
+  const comp = compAtual();
+  const tol  = tolerancia();
+
+  // 1. normaliza o rateio conforme o de-para de colunas
+  const itens = [];
+  ST.rateioRows.forEach((row, i) => {
+    const nfRaw  = row[ST.map.nf];
+    const evento = normTxt(row[ST.map.evento]);
+    const valor  = toNum(row[ST.map.valor]);
+    if (!normTxt(nfRaw) && !evento && !valor) return;   // linha em branco
+    itens.push({
+      linha:   i + 2,
+      nfRaw:   normTxt(nfRaw),
+      nfKey:   normNF(nfRaw),
+      evento:  evento || "(sem evento)",
+      valor:   valor,
+      cliente: ST.map.cliente ? normTxt(row[ST.map.cliente]) : ""
+    });
+  });
+
+  // o mesmo evento pode aparecer duas vezes na mesma nota: a chave ganha sufixo
+  const idsUsados = new Map();
+  function chaveUnica(base) {
+    const n = (idsUsados.get(base) || 0) + 1;
+    idsUsados.set(base, n);
+    return n === 1 ? base : base + "#" + n;
+  }
+
+  const porNF = new Map();
+  itens.forEach(it => {
+    if (!porNF.has(it.nfKey)) porNF.set(it.nfKey, []);
+    porNF.get(it.nfKey).push(it);
+  });
+
+  // 2. cruza cada nota com o seu rateio
+  const linhas = [], problemas = [];
+  const casadas = new Set();
+
+  ST.nfs.forEach(nf => {
+    const key = normNF(nf.numero);
+    const its = porNF.get(key) || [];
+    if (its.length) casadas.add(key);
+
+    const soma = round2(its.reduce((a, i) => a + i.valor, 0));
+    const dif  = round2(soma - nf.valor);
+    let status;
+    if (!its.length)                 status = "SEM RATEIO";
+    else if (Math.abs(dif) > tol)    status = "DIVERGENTE";
+    else if (nf.foraComp)            status = "FORA DA COMPETENCIA";
+    else                             status = "OK";
+
+    if (status !== "OK") {
+      problemas.push({
+        nf: nf.numero, cliente: nf.cliente, status: status,
+        valorNF: nf.valor, somaRateio: soma, diferenca: dif,
+        detalhe: !its.length ? "Nota sem nenhum evento de rateio"
+               : Math.abs(dif) > tol ? "Soma do rateio difere do total da nota em " + brl(dif)
+               : "Emissao em " + (nf.emissao || "?") + ", fora de " + comp.label
+      });
+    }
+
+    const base = {
+      competencia: comp.label, numero: nf.numero, serie: nf.serie,
+      emissao: nf.emissao, cliente: nf.cliente, doc: nf.doc,
+      valorNF: nf.valor, chave: nf.chave, modelo: nf.modelo, status: status
+    };
+
+    if (!its.length) {
+      linhas.push({ ...base, evento: "(sem rateio)", valorEvento: nf.valor,
+                    idUnico: chaveUnica(comp.label + "|" + key + "|SEM-RATEIO") });
+    } else {
+      its.forEach(it => linhas.push({
+        ...base,
+        cliente: nf.cliente || it.cliente,
+        evento: it.evento,
+        valorEvento: it.valor,
+        idUnico: chaveUnica(comp.label + "|" + key + "|" + it.evento.toUpperCase())
+      }));
+    }
+  });
+
+  // 3. rateio orfao: evento sem nota correspondente
+  porNF.forEach((its, key) => {
+    if (casadas.has(key)) return;
+    const soma = round2(its.reduce((a, i) => a + i.valor, 0));
+    problemas.push({
+      nf: its[0].nfRaw || "(vazio)", cliente: its[0].cliente, status: "SEM NF",
+      valorNF: 0, somaRateio: soma, diferenca: soma,
+      detalhe: "Rateio sem XML correspondente (linha " + its[0].linha + " da planilha)"
+    });
+    its.forEach(it => linhas.push({
+      competencia: comp.label, numero: it.nfRaw, serie: "", emissao: "",
+      cliente: it.cliente, doc: "", valorNF: 0, chave: "", modelo: "",
+      status: "SEM NF", evento: it.evento, valorEvento: it.valor,
+      idUnico: chaveUnica(comp.label + "|" + (key || "SEM-NF") + "|" + it.evento.toUpperCase())
+    }));
+  });
+
+  // 4. consolidado por evento
+  const mapEv = new Map();
+  linhas.forEach(l => {
+    if (!mapEv.has(l.evento)) mapEv.set(l.evento, { evento: l.evento, total: 0, nfs: new Set(), qtd: 0 });
+    const e = mapEv.get(l.evento);
+    e.total += l.valorEvento; e.qtd++; e.nfs.add(l.numero);
+  });
+  const eventos = [...mapEv.values()]
+    .map(e => ({ evento: e.evento, total: round2(e.total), qtdNFs: e.nfs.size, qtdLinhas: e.qtd }))
+    .sort((a, b) => b.total - a.total);
+
+  ST.res = {
+    linhas, problemas, eventos, comp,
+    totalNF:     round2(ST.nfs.reduce((a, n) => a + n.valor, 0)),
+    totalRateio: round2(itens.reduce((a, i) => a + i.valor, 0)),
+    okCount:     ST.nfs.filter(n => {
+                   const its = porNF.get(normNF(n.numero)) || [];
+                   return its.length && Math.abs(round2(its.reduce((a,i)=>a+i.valor,0) - n.valor)) <= tol;
+                 }).length
+  };
+
+  renderConciliacao();
+  atualizarBotoes();
+  document.getElementById("sn-4").classList.toggle("done", ST.res.problemas.length === 0);
+  toast(problemas.length ? problemas.length + " divergencia(s) a resolver" : "Conciliacao sem divergencias");
+}
+
+/* ── renderizacao ────────────────────────────────────────────── */
+
+const BADGE = {
+  "OK": "badge-ok", "DIVERGENTE": "badge-err", "SEM RATEIO": "badge-warn",
+  "SEM NF": "badge-err", "FORA DA COMPETENCIA": "badge-warn"
+};
+
+function renderConciliacao() {
+  const vazio = document.getElementById("conc-vazio");
+  const box   = document.getElementById("conc-box");
+  if (!ST.res) { vazio.classList.remove("hidden"); box.classList.add("hidden"); return; }
+  vazio.classList.add("hidden"); box.classList.remove("hidden");
+
+  const r = ST.res;
+  const dif = round2(r.totalRateio - r.totalNF);
+  document.getElementById("conc-metrics").innerHTML = `
+    <div class="metric"><div class="metric-label">Notas</div><div class="metric-value">${ST.nfs.length}</div></div>
+    <div class="metric"><div class="metric-label">Total das notas</div><div class="metric-value">${brl(r.totalNF)}</div></div>
+    <div class="metric"><div class="metric-label">Total do rateio</div><div class="metric-value">${brl(r.totalRateio)}</div></div>
+    <div class="metric ${Math.abs(dif) <= tolerancia() ? "ok" : "err"}">
+      <div class="metric-label">Diferenca</div><div class="metric-value">${brl(dif)}</div></div>
+    <div class="metric ok"><div class="metric-label">Notas conciliadas</div><div class="metric-value">${r.okCount}</div></div>
+    <div class="metric ${r.problemas.length ? "err" : "ok"}">
+      <div class="metric-label">Divergencias</div><div class="metric-value">${r.problemas.length}</div></div>`;
+
+  // detalhe
+  const totDet = round2(r.linhas.reduce((a, l) => a + l.valorEvento, 0));
+  document.getElementById("tab-detalhe").innerHTML = `
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>NF</th><th>Emissao</th><th>Cliente</th><th>Evento</th>
+        <th style="text-align:right">Valor evento</th><th style="text-align:right">Total NF</th><th>Status</th>
+      </tr></thead>
+      <tbody>${r.linhas.map(l => `
+        <tr>
+          <td class="mono">${esc(l.numero)}${l.serie ? "/" + esc(l.serie) : ""}</td>
+          <td class="mono">${esc(l.emissao)}</td>
+          <td>${esc(l.cliente)}</td>
+          <td>${esc(l.evento)}</td>
+          <td class="num">${brl(l.valorEvento)}</td>
+          <td class="num muted">${l.valorNF ? brl(l.valorNF) : "—"}</td>
+          <td><span class="badge ${BADGE[l.status] || "badge-info"}">${esc(l.status)}</span></td>
+        </tr>`).join("")}</tbody>
+      <tfoot><tr><td colspan="4">${r.linhas.length} linha(s)</td>
+        <td class="num">${brl(totDet)}</td><td colspan="2"></td></tr></tfoot>
+    </table></div>`;
+
+  // consolidado por evento
+  const totEv = round2(r.eventos.reduce((a, e) => a + e.total, 0));
+  document.getElementById("tab-eventos").innerHTML = `
+    <div class="table-wrap"><table>
+      <thead><tr><th>Evento</th><th style="text-align:right">Notas</th>
+        <th style="text-align:right">Lancamentos</th><th style="text-align:right">Total</th></tr></thead>
+      <tbody>${r.eventos.map(e => `
+        <tr><td>${esc(e.evento)}</td>
+          <td class="num">${e.qtdNFs}</td><td class="num">${e.qtdLinhas}</td>
+          <td class="num">${brl(e.total)}</td></tr>`).join("")}</tbody>
+      <tfoot><tr><td colspan="3">${r.eventos.length} evento(s) &mdash; total lancado no controle</td>
+        <td class="num">${brl(totEv)}</td></tr></tfoot>
+    </table></div>`;
+
+  // divergencias
+  document.getElementById("tab-probs").innerHTML = r.problemas.length ? `
+    <div class="alert alert-warn"><span>Resolva estes itens antes de gravar na Controle de Faturamento.</span></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>NF</th><th>Cliente</th><th>Ocorrencia</th>
+        <th style="text-align:right">Total NF</th><th style="text-align:right">Soma rateio</th>
+        <th style="text-align:right">Diferenca</th><th>O que houve</th></tr></thead>
+      <tbody>${r.problemas.map(p => `
+        <tr><td class="mono">${esc(p.nf)}</td><td>${esc(p.cliente)}</td>
+          <td><span class="badge ${BADGE[p.status] || "badge-err"}">${esc(p.status)}</span></td>
+          <td class="num">${p.valorNF ? brl(p.valorNF) : "—"}</td>
+          <td class="num">${brl(p.somaRateio)}</td>
+          <td class="num" style="color:var(--red)">${brl(p.diferenca)}</td>
+          <td class="muted">${esc(p.detalhe)}</td></tr>`).join("")}</tbody>
+    </table></div>`
+    : `<div class="alert alert-info"><span>Nenhuma divergencia: a soma do rateio bate com o total de todas as notas.</span></div>`;
+}
+
+function aba(btn) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  btn.classList.add("active");
+  ["detalhe", "eventos", "probs"].forEach(t =>
+    document.getElementById("tab-" + t).classList.toggle("hidden", t !== btn.dataset.tab));
+}
+
+/* ── gerador .xlsx nativo (ZIP + SpreadsheetML, sem dependencia) ──
+   A exportacao e o produto final da ferramenta, entao ela nao pode
+   depender de CDN: o arquivo abaixo escreve o .xlsx do zero.       */
+
+const CRC_TAB = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+
+function crc32(buf) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < buf.length; i++) c = CRC_TAB[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+function bytes(str) { return new TextEncoder().encode(str); }
+
+// ZIP sem compressao (metodo "store") - suficiente e sem inflate/deflate
+function zipar(itens) {
+  const partes = [], central = [];
+  let offset = 0;
+
+  itens.forEach(it => {
+    const nome = bytes(it.nome), crc = crc32(it.dados), tam = it.dados.length;
+
+    const lh = new Uint8Array(30 + nome.length);
+    const dv = new DataView(lh.buffer);
+    dv.setUint32(0, 0x04034b50, true);
+    dv.setUint16(4, 20, true); dv.setUint16(6, 0x0800, true); dv.setUint16(8, 0, true);
+    dv.setUint16(10, 0, true); dv.setUint16(12, 0x21, true);          // 1980-01-01
+    dv.setUint32(14, crc, true); dv.setUint32(18, tam, true); dv.setUint32(22, tam, true);
+    dv.setUint16(26, nome.length, true); dv.setUint16(28, 0, true);
+    lh.set(nome, 30);
+    partes.push(lh, it.dados);
+
+    const ch = new Uint8Array(46 + nome.length);
+    const cv = new DataView(ch.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true); cv.setUint16(6, 20, true); cv.setUint16(8, 0x0800, true);
+    cv.setUint16(10, 0, true); cv.setUint16(12, 0, true); cv.setUint16(14, 0x21, true);
+    cv.setUint32(16, crc, true); cv.setUint32(20, tam, true); cv.setUint32(24, tam, true);
+    cv.setUint16(28, nome.length, true);
+    cv.setUint32(42, offset, true);
+    ch.set(nome, 46);
+    central.push(ch);
+
+    offset += lh.length + tam;
+  });
+
+  const cdTam = central.reduce((a, c) => a + c.length, 0);
+  const eocd  = new Uint8Array(22);
+  const ev    = new DataView(eocd.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, itens.length, true); ev.setUint16(10, itens.length, true);
+  ev.setUint32(12, cdTam, true); ev.setUint32(16, offset, true);
+
+  return new Blob([...partes, ...central, eocd],
+    { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+}
+
+function colLetra(n) {
+  let s = "";
+  while (n > 0) { const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26); }
+  return s;
+}
+
+function escXml(v) {
+  return String(v == null ? "" : v)
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+}
+
+function folhaXML(linhas) {
+  const rows = linhas.map((linha, i) => {
+    const cels = (linha || []).map((v, j) => {
+      if (v === null || v === undefined || v === "") return "";
+      const ref = colLetra(j + 1) + (i + 1);
+      if (typeof v === "number" && isFinite(v)) return '<c r="' + ref + '"><v>' + v + '</v></c>';
+      return '<c r="' + ref + '" t="inlineStr"><is><t xml:space="preserve">' + escXml(v) + '</t></is></c>';
+    }).join("");
+    return '<row r="' + (i + 1) + '">' + cels + '</row>';
+  }).join("");
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<sheetData>' + rows + '</sheetData></worksheet>';
+}
+
+function gerarXLSX(abas) {
+  const NS = "http://schemas.openxmlformats.org/";
+  const arqs = [];
+
+  arqs.push({ nome: "[Content_Types].xml", dados: bytes(
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Types xmlns="' + NS + 'package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+    abas.map((a, i) => '<Override PartName="/xl/worksheets/sheet' + (i + 1) +
+      '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join("") +
+    '</Types>') });
+
+  arqs.push({ nome: "_rels/.rels", dados: bytes(
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="' + NS + 'package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="' + NS + 'officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+    '</Relationships>') });
+
+  arqs.push({ nome: "xl/workbook.xml", dados: bytes(
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<workbook xmlns="' + NS + 'spreadsheetml/2006/main" xmlns:r="' + NS + 'officeDocument/2006/relationships">' +
+    '<sheets>' + abas.map((a, i) =>
+      '<sheet name="' + escXml(a.nome) + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>').join("") +
+    '</sheets></workbook>') });
+
+  arqs.push({ nome: "xl/_rels/workbook.xml.rels", dados: bytes(
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="' + NS + 'package/2006/relationships">' +
+    abas.map((a, i) => '<Relationship Id="rId' + (i + 1) + '" Type="' + NS +
+      'officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + (i + 1) + '.xml"/>').join("") +
+    '</Relationships>') });
+
+  abas.forEach((a, i) => arqs.push({
+    nome: "xl/worksheets/sheet" + (i + 1) + ".xml", dados: bytes(folhaXML(a.linhas))
+  }));
+
+  return zipar(arqs);
+}
+
+/* ── passo 5: saida ──────────────────────────────────────────── */
+
+const COLS_CONTROLE = ["Competencia", "Modelo", "Numero NF", "Serie", "Data Emissao", "Cliente",
+                       "CNPJ/CPF", "Evento", "Valor Evento", "Valor Total NF", "Chave/Cod Verificacao",
+                       "Status Conciliacao", "ID_Unico"];
+
+function linhasControle() {
+  return ST.res.linhas.map(l => [
+    l.competencia, l.modelo, l.numero, l.serie, l.emissao, l.cliente, l.doc,
+    l.evento, round2(l.valorEvento), round2(l.valorNF), l.chave, l.status, l.idUnico
+  ]);
+}
+
+function baixar(blob, nome) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = nome;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function nomeArquivo(ext) {
+  return "Controle_Faturamento_" + ST.res.comp.label.replace("/", "-") + "." + ext;
+}
+
+function exportarXLSX() {
+  const r = ST.res;
+  const totalGeral = round2(r.eventos.reduce((a, e) => a + e.total, 0));
+  baixar(gerarXLSX([
+    { nome: "Controle_Faturamento", linhas: [COLS_CONTROLE, ...linhasControle()] },
+    { nome: "Consolidado_Eventos", linhas: [
+        ["Competencia", "Evento", "Qtde Notas", "Qtde Lancamentos", "Valor Total"],
+        ...r.eventos.map(e => [r.comp.label, e.evento, e.qtdNFs, e.qtdLinhas, e.total]),
+        [],
+        ["", "TOTAL LANCADO NO CONTROLE", "", "", totalGeral],
+        ["", "TOTAL DAS NOTAS (XML)", "", "", r.totalNF],
+        ["", "DIFERENCA", "", "", round2(totalGeral - r.totalNF)]
+      ] },
+    { nome: "Divergencias", linhas: [
+        ["NF", "Cliente", "Ocorrencia", "Valor Total NF", "Soma Rateio", "Diferenca", "Detalhe"],
+        ...r.problemas.map(p => [p.nf, p.cliente, p.status, p.valorNF, p.somaRateio, p.diferenca, p.detalhe])
+      ] },
+    { nome: "Notas", linhas: [
+        ["Modelo", "Numero", "Serie", "Emissao", "Cliente", "CNPJ/CPF", "Valor", "Chave", "Arquivo"],
+        ...ST.nfs.map(n => [n.modelo, n.numero, n.serie, n.emissao, n.cliente, n.doc, round2(n.valor), n.chave, n.arquivo])
+      ] }
+  ]), nomeArquivo("xlsx"));
+  toast("Arquivo .xlsx gerado");
+}
+
+function exportarCSV() {
+  const linhas = [COLS_CONTROLE, ...linhasControle()];
+  const csv = linhas.map(l => l.map(c => {
+    const s = String(c == null ? "" : c);
+    return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }).join(";")).join("\r\n");
+  baixar(new Blob(["﻿" + csv], { type:"text/csv;charset=utf-8" }), nomeArquivo("csv"));
+  toast("CSV gerado");
+}
+
+function copiarLinhas() {
+  const tsv = [COLS_CONTROLE, ...linhasControle()]
+    .map(l => l.map(c => String(c == null ? "" : c).replace(/\t/g, " ")).join("\t")).join("\n");
+  const ok = () => toast("Linhas copiadas - cole na Controle de Faturamento");
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(tsv).then(ok, () => copiarFallback(tsv, ok));
+  } else copiarFallback(tsv, ok);
+}
+
+function copiarFallback(texto, ok) {
+  const ta = document.createElement("textarea");
+  ta.value = texto;
+  ta.style.position = "fixed"; ta.style.opacity = "0";
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand("copy"); ok(); } catch (e) { toast("Nao consegui copiar."); }
+  ta.remove();
+}
+
+/* ── inicializacao ──────────────────────────────────────────── */
+
+ligarDrop("drop-xml", "in-xml", receberXML);
+ligarDrop("drop-rat", "in-rat", receberRateio);
+
+document.getElementById("f-comp").addEventListener("change", () => {
+  document.getElementById("top-comp").textContent = compAtual().label;
+  ST.res = null; renderConciliacao(); atualizarBotoes();
+});
+document.getElementById("f-tol").addEventListener("change", () => {
+  ST.res = null; renderConciliacao(); atualizarBotoes();
+});
+
+window.addEventListener("load", () => {
+  if (typeof DecompressionStream === "undefined") {
+    document.getElementById("lib-warn").classList.remove("hidden");
+    document.getElementById("in-rat").accept = ".csv,text/csv";
+  }
+  atualizarBotoes();
+});
+
+document.getElementById("top-comp").textContent = compAtual().label;
+atualizarBotoes();
+</script>
+</body>
+</html>
