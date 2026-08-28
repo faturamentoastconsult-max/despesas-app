@@ -189,7 +189,7 @@ tfoot td { font-weight: 600; background: var(--gray-50); border-top: 1px solid v
 <main class="main">
 
   <div class="alert alert-err hidden" id="lib-warn">
-    <span>Este navegador nao suporta a leitura de <b>.xlsx</b>. Salve o rateio como <b>CSV</b> &mdash; o restante funciona normalmente.</span>
+    <span>Este navegador nao suporta a leitura de <b>.xlsx</b>. Os demonstrativos (passo 3) ficam indisponiveis &mdash; o restante funciona normalmente.</span>
   </div>
 
   <!-- PASSO 1 -->
@@ -199,12 +199,20 @@ tfoot td { font-weight: 600; background: var(--gray-50); border-top: 1px solid v
       <div class="form-group">
         <label for="f-comp">Mes de referencia</label>
         <input class="form-control" id="f-comp" type="month" value="2026-08">
-        <div class="hint">Usado como chave do lote e para conferir a data de emissao das notas.</div>
+        <div class="hint">Chave do lote e conferencia da data de emissao.</div>
       </div>
       <div class="form-group">
         <label for="f-tol">Tolerancia de arredondamento (R$)</label>
         <input class="form-control" id="f-tol" type="number" step="0.01" min="0" value="0.02">
-        <div class="hint">Diferenca aceita entre a soma do rateio e o total da NF.</div>
+        <div class="hint">O demonstrativo fecha com a NF com 2 centavos de diferenca.</div>
+      </div>
+      <div class="form-group">
+        <label for="f-base">Valor que vai para o controle</label>
+        <select class="form-control" id="f-base">
+          <option value="servicos">Valor dos servicos (base de calculo)</option>
+          <option value="liquido">Valor liquido a pagar</option>
+        </select>
+        <div class="hint">Bruto e o total faturado; liquido e o depois das retencoes.</div>
       </div>
       <div class="form-group">
         <label for="f-fora">Notas fora da competencia</label>
@@ -212,7 +220,7 @@ tfoot td { font-weight: 600; background: var(--gray-50); border-top: 1px solid v
           <option value="avisar">Importar e sinalizar</option>
           <option value="ignorar">Descartar na importacao</option>
         </select>
-        <div class="hint">Evita que o arquivo do mes errado entre no lote.</div>
+        <div class="hint">Evita arquivo do mes errado no lote.</div>
       </div>
     </div>
   </section>
@@ -225,7 +233,7 @@ tfoot td { font-weight: 600; background: var(--gray-50); border-top: 1px solid v
     </div>
     <div class="drop" id="drop-xml">
       <div class="drop-title">Arraste os XMLs aqui ou clique para selecionar</div>
-      <div class="drop-sub">NFe e NFSe (padrao ABRASF). Pode soltar varios de uma vez.</div>
+      <div class="drop-sub">Le o arquivo do mes inteiro (ConsultarNfseFaixaResposta) ou notas avulsas. NFSe ABRASF e NFe.</div>
     </div>
     <input type="file" id="in-xml" accept=".xml,text/xml,application/xml" multiple class="hidden">
     <div class="file-list hidden" id="xml-list"></div>
@@ -237,40 +245,22 @@ tfoot td { font-weight: 600; background: var(--gray-50); border-top: 1px solid v
   <!-- PASSO 3 -->
   <section class="card">
     <div class="card-title">
-      <span><span class="step-num" id="sn-3">3</span>Rateio (Excel ou CSV)</span>
-      <span class="card-subtitle" id="rat-resumo">nenhum arquivo</span>
+      <span><span class="step-num" id="sn-3">3</span>Demonstrativos de faturamento <span class="card-subtitle">&mdash; opcional</span></span>
+      <span class="card-subtitle" id="dem-resumo">nenhum arquivo</span>
     </div>
-    <div class="drop" id="drop-rat">
-      <div class="drop-title">Arraste a planilha de rateio aqui ou clique para selecionar</div>
-      <div class="drop-sub">.xlsx ou .csv &mdash; uma linha por evento.</div>
+    <div class="alert alert-info">
+      <span>A quebra por evento ja vem da discriminacao da nota, entao este passo e opcional.
+      Solte os demonstrativos (um .xlsx por NF) quando quiser <b>conferir a nota contra a folha</b> e ter o
+      detalhe por <b>verba</b> e por <b>centro de custo</b>.</span>
     </div>
-    <input type="file" id="in-rat" accept=".xlsx,.csv,text/csv" class="hidden">
-
-    <div class="hidden" id="map-box" style="margin-top:1rem">
-      <div class="alert alert-info">
-        <span>Confira o de-para das colunas. O mapeamento fica salvo neste navegador para os proximos meses.</span>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label for="m-nf">Numero da NF <span class="muted">(obrigatorio)</span></label>
-          <select class="form-control" id="m-nf" onchange="salvarMap()"></select>
-        </div>
-        <div class="form-group">
-          <label for="m-evento">Evento do rateio <span class="muted">(obrigatorio)</span></label>
-          <select class="form-control" id="m-evento" onchange="salvarMap()"></select>
-        </div>
-        <div class="form-group">
-          <label for="m-valor">Valor do evento <span class="muted">(obrigatorio)</span></label>
-          <select class="form-control" id="m-valor" onchange="salvarMap()"></select>
-        </div>
-        <div class="form-group">
-          <label for="m-cliente">Cliente <span class="muted">(opcional)</span></label>
-          <select class="form-control" id="m-cliente" onchange="salvarMap()"></select>
-        </div>
-      </div>
-      <div class="actions">
-        <button class="btn btn-ghost btn-sm" onclick="limparRateio()">Limpar rateio</button>
-      </div>
+    <div class="drop" id="drop-dem">
+      <div class="drop-title">Arraste os demonstrativos aqui ou clique para selecionar</div>
+      <div class="drop-sub">.xlsx no formato "Demonstrativo de Faturamento Ref. Nota Fiscal NNNNNN". Pode soltar varios.</div>
+    </div>
+    <input type="file" id="in-dem" accept=".xlsx" multiple class="hidden">
+    <div class="file-list hidden" id="dem-list"></div>
+    <div class="actions hidden" id="dem-actions">
+      <button class="btn btn-ghost btn-sm" onclick="limparDem()">Limpar demonstrativos</button>
     </div>
   </section>
 
@@ -280,16 +270,18 @@ tfoot td { font-weight: 600; background: var(--gray-50); border-top: 1px solid v
       <span><span class="step-num" id="sn-4">4</span>Conciliacao</span>
       <button class="btn btn-primary btn-sm" id="btn-conc" onclick="conciliar()" disabled>Conciliar</button>
     </div>
-    <div id="conc-vazio" class="muted" style="font-size:13px">Importe as notas e o rateio para conciliar.</div>
+    <div id="conc-vazio" class="muted" style="font-size:13px">Importe os XMLs para conciliar.</div>
     <div class="hidden" id="conc-box">
       <div class="metrics" id="conc-metrics"></div>
       <div class="tabs">
-        <button class="tab active" data-tab="detalhe" onclick="aba(this)">Detalhe (NF x evento)</button>
+        <button class="tab active" data-tab="controle" onclick="aba(this)">Uma linha por NF</button>
         <button class="tab" data-tab="eventos"  onclick="aba(this)">Consolidado por evento</button>
+        <button class="tab" data-tab="detalhe"  onclick="aba(this)">Detalhe NF x evento</button>
         <button class="tab" data-tab="probs"    onclick="aba(this)">Divergencias</button>
       </div>
-      <div id="tab-detalhe"></div>
+      <div id="tab-controle"></div>
       <div id="tab-eventos" class="hidden"></div>
+      <div id="tab-detalhe" class="hidden"></div>
       <div id="tab-probs"   class="hidden"></div>
     </div>
   </section>
@@ -298,11 +290,13 @@ tfoot td { font-weight: 600; background: var(--gray-50); border-top: 1px solid v
   <section class="card">
     <div class="card-title"><span><span class="step-num" id="sn-5">5</span>Preencher a Controle de Faturamento</span></div>
     <div class="alert alert-info">
-      <span>O arquivo gerado traz 4 abas: <b>Controle_Faturamento</b> (linhas prontas para colar), <b>Consolidado_Eventos</b>, <b>Divergencias</b> e <b>Notas</b>. A coluna <b>ID_Unico</b> e a chave de reimportacao: competencia + NF + evento.</span>
+      <span>O <b>.xlsx</b> traz: <b>Controle_Faturamento</b> (uma linha por NF, com uma coluna para cada evento),
+      <b>Eventos_Detalhe</b> (formato longo), <b>Consolidado_Eventos</b>, <b>Divergencias</b>,
+      <b>Demonstrativos</b> e <b>Centros_de_Custo</b>. A coluna <b>ID_Unico</b> e a chave de reimportacao.</span>
     </div>
     <div class="actions">
       <button class="btn btn-primary" id="btn-xlsx" onclick="exportarXLSX()" disabled>Baixar .xlsx</button>
-      <button class="btn btn-ghost"  id="btn-csv"  onclick="exportarCSV()"  disabled>Baixar CSV</button>
+      <button class="btn btn-ghost"  id="btn-csv"  onclick="exportarCSV()"  disabled>Baixar CSV (uma linha por NF)</button>
       <button class="btn btn-ghost"  id="btn-copy" onclick="copiarLinhas()" disabled>Copiar linhas para colar</button>
     </div>
   </section>
@@ -314,25 +308,30 @@ tfoot td { font-weight: 600; background: var(--gray-50); border-top: 1px solid v
 
 <div class="toast" id="toast"></div>
 
+
 <script>
 /* ══════════════════════════════════════════════════════════════
    CONECTOR DE FATURAMENTO
-   NFe/NFSe (XML) = cabecalho fiscal  |  Rateio (xlsx/csv) = itens
-   Regra central: a soma dos eventos do rateio tem de bater com o
-   total da nota. O que nao bate vira divergencia, nao vira linha.
+
+   Fonte primaria: o XML mensal da NFSe. Um arquivo traz o mes
+   inteiro, e a <Discriminacao> de cada nota ja carrega a quebra
+   por evento (salarios, taxa, encargos, VT, VR, deducoes...).
+
+   Regra central: a soma dos eventos da discriminacao tem de bater
+   com o valor da nota. O que nao bate e sinalizado.
+
+   Fonte opcional: os demonstrativos de faturamento (.xlsx, um por
+   NF), que trazem o detalhe por verba e por centro de custo.
    ══════════════════════════════════════════════════════════════ */
 
 const ST = {
-  nfs: [],          // cabecalhos lidos dos XMLs
-  arquivos: [],     // status por arquivo importado
-  rateioRows: [],   // linhas cruas da planilha de rateio
-  headers: [],      // cabecalhos detectados no rateio
-  ratArquivo: "",
-  map: { nf:"", evento:"", valor:"", cliente:"" },
-  res: null         // resultado da conciliacao
+  notas: [],      // uma entrada por NFSe/NFe lida
+  arquivos: [],   // status por arquivo XML
+  demos: [],      // demonstrativos lidos
+  demoArqs: [],   // status por arquivo de demonstrativo
+  rotulos: {},    // chave canonica -> rotulo legivel
+  res: null
 };
-
-const MAP_KEY = "conector_faturamento_map_v1";
 
 /* ── utilitarios ────────────────────────────────────────────── */
 
@@ -341,7 +340,7 @@ function toast(msg) {
   t.textContent = msg;
   t.classList.add("show");
   clearTimeout(t._t);
-  t._t = setTimeout(() => t.classList.remove("show"), 2600);
+  t._t = setTimeout(() => t.classList.remove("show"), 2800);
 }
 
 function esc(v) {
@@ -351,12 +350,18 @@ function esc(v) {
 }
 
 function round2(n) { return Math.round((Number(n) + Number.EPSILON) * 100) / 100; }
+function brl(n) { return Number(n || 0).toLocaleString("pt-BR", { style:"currency", currency:"BRL" }); }
+function normTxt(v) { return String(v == null ? "" : v).trim().replace(/\s+/g, " "); }
 
-function brl(n) {
-  return Number(n || 0).toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
+// Chave canonica: maiuscula, sem acento, sem espaco nem pontuacao.
+// E o que faz "TOTAL DAS DEDUÇÕES" e "TOTAL DAS DEDUCOES" virarem o
+// mesmo evento no consolidado do mes.
+function canon(s) {
+  return String(s == null ? "" : s)
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
 
-// Aceita numero puro, "1.234,56", "1234.56", "1.500", "R$ 90,00"
 function toNum(v) {
   if (typeof v === "number") return isFinite(v) ? v : 0;
   if (v == null) return 0;
@@ -366,34 +371,31 @@ function toNum(v) {
   s = s.replace(/[()\-]/g, "");
   if (s.includes(",") && s.includes(".")) {
     s = s.lastIndexOf(",") > s.lastIndexOf(".")
-      ? s.replace(/\./g, "").replace(",", ".")   // 1.234,56
-      : s.replace(/,/g, "");                     // 1,234.56
+      ? s.replace(/\./g, "").replace(",", ".")
+      : s.replace(/,/g, "");
   } else if (s.includes(",")) {
     s = s.replace(",", ".");
   } else if (/^\d{1,3}(\.\d{3})+$/.test(s)) {
-    s = s.replace(/\./g, "");                    // 1.500 = mil e quinhentos
+    s = s.replace(/\./g, "");
   }
   const n = parseFloat(s);
   return isNaN(n) ? 0 : (neg ? -n : n);
 }
 
-// "000123" e "123" sao a mesma nota
 function normNF(v) {
   const d = String(v == null ? "" : v).replace(/\D/g, "").replace(/^0+/, "");
   return d || String(v || "").trim().toUpperCase();
 }
-
-function normTxt(v) { return String(v == null ? "" : v).trim().replace(/\s+/g, " "); }
 
 function compAtual() {
   const raw = document.getElementById("f-comp").value || "2026-08";
   const [a, m] = raw.split("-");
   return { iso: raw, label: m + "/" + a };
 }
-
 function tolerancia() { return Math.abs(toNum(document.getElementById("f-tol").value)) || 0; }
+function baseValor()  { return document.getElementById("f-base").value; }
 
-/* ── leitura de XML (NFe e NFSe) ─────────────────────────────── */
+/* ── leitura de XML ─────────────────────────────────────────── */
 
 function tags(root, name) {
   const out = [], all = root.getElementsByTagName("*");
@@ -408,6 +410,55 @@ function filho(el, name) {
   return null;
 }
 function txtFilho(el, name) { const c = filho(el, name); return c ? normTxt(c.textContent) : ""; }
+// a discriminacao separa as linhas por "|" OU por quebra de linha: aqui o texto
+// nao pode passar por normTxt, que colapsaria justamente esses \n
+function txtCru(root, name) { const e = tag(root, name); return e ? e.textContent : ""; }
+
+/* ── discriminacao: a quebra por evento que vem dentro da nota ──
+   Rotulos derivados (bases e totais) nao entram na soma; linhas
+   informativas sao descartadas. Tudo o mais e evento -- assim um
+   rotulo novo entra sozinho e, se for classificado errado, a
+   propria conferencia de soma denuncia.                          */
+
+const DISC_TOTAIS = ["BASEDECALCULO", "VALORLIQUIDOAPAGAR", "VALORBRUTO",
+                     "VALORTOTAL", "TOTALGERAL", "TOTALDANOTA"];
+const DISC_INFO   = ["BASECBS", "VALORCBS", "VALORIBS", "VENCTO", "DEPOSITO",
+                     "PEDIDO", "NUMEROPEDIDO", "DS", "SERVICOSPRESTADOS", "OBS", "NOTA"];
+
+const RX_COM_RS = /^(.*?)[.\s]*R\$\s*(-?[\d.]*\d(?:,\d{2})?)\s*$/;
+const RX_SEM_RS = /^([A-ZÀ-Ú][A-ZÀ-Ú0-9/.,\-\s]*?[A-ZÀ-Ú.])\s+(-?[\d.]*\d,\d{2})\s*$/;
+
+function lerDiscriminacao(disc) {
+  const eventos = [], totais = {}, extras = {};
+  (disc || "").split(/[|\n]/).forEach(bruto => {
+    const p = normTxt(bruto);
+    if (!p || p === ".") return;
+
+    const venc = /VENCTO[.\s]*DA NOTA\s*:\s*(\d{2}\/\d{2}\/\d{4})/i.exec(p);
+    if (venc) extras.vencimento = venc[1];
+    const ped = /(?:NUMERO\s*)?PEDIDO\s*:?\s*(\S+)/i.exec(p);
+    if (ped && !extras.pedido) extras.pedido = ped[1];
+    const mes = /SERVICOS PRESTADOS NO MES\s*(\d{2}\/\d{4})/i.exec(p);
+    if (mes) extras.mesServico = mes[1];
+
+    if (p.includes("%")) return;                       // linhas de aliquota CBS/IBS
+    const m = RX_COM_RS.exec(p) || RX_SEM_RS.exec(p);
+    if (!m) return;
+
+    const rotulo = m[1].replace(/[.\s]+$/, "").trim();
+    if (!rotulo) return;
+    const chave = canon(rotulo);
+    if (!chave) return;
+
+    if (DISC_INFO.some(x => chave.startsWith(x))) return;
+    if (chave === "TOTAL" || DISC_TOTAIS.some(x => chave.startsWith(x))) {
+      totais[chave] = toNum(m[2]);
+      return;
+    }
+    eventos.push({ rotulo, chave, valor: toNum(m[2]) });
+  });
+  return { eventos, totais, extras };
+}
 
 function lerXML(texto, arquivo) {
   let doc;
@@ -415,41 +466,20 @@ function lerXML(texto, arquivo) {
   catch (e) { return { ok:false, erro:"XML ilegivel" }; }
   if (doc.getElementsByTagName("parsererror").length) return { ok:false, erro:"XML mal formado" };
 
-  const infNFe = tag(doc, "infNFe");
-  if (infNFe) return lerNFe(infNFe, arquivo);
+  // um arquivo pode trazer o mes inteiro
+  const infsNFSe = tags(doc, "InfNfse");
+  if (infsNFSe.length) return { ok:true, notas: infsNFSe.map(i => lerNFSe(i, arquivo)).filter(Boolean) };
 
-  const infNfse = tag(doc, "InfNfse") || tag(doc, "Nfse") || tag(doc, "CompNfse");
-  if (infNfse) return lerNFSe(infNfse, arquivo);
+  const infsNFe = tags(doc, "infNFe");
+  if (infsNFe.length) return { ok:true, notas: infsNFe.map(i => lerNFe(i, arquivo)).filter(Boolean) };
 
   if (tag(doc, "infEvento") || tag(doc, "retEvento"))
-    return { ok:false, erro:"Arquivo de evento/cancelamento" };
-
-  return { ok:false, erro:"Layout nao reconhecido" };
-}
-
-function lerNFe(infNFe, arquivo) {
-  const ide  = tag(infNFe, "ide") || infNFe;
-  const dest = tag(infNFe, "dest");
-  const tot  = tag(infNFe, "ICMSTot");
-  const emi  = (txt(ide, "dhEmi") || txt(ide, "dEmi") || "").slice(0, 10);
-  return {
-    ok: true,
-    nf: {
-      modelo:   "NFe",
-      numero:   txt(ide, "nNF"),
-      serie:    txt(ide, "serie"),
-      chave:    (infNFe.getAttribute("Id") || "").replace(/\D/g, ""),
-      emissao:  emi,
-      cliente:  dest ? txt(dest, "xNome") : "",
-      doc:      dest ? (txt(dest, "CNPJ") || txt(dest, "CPF") || txt(dest, "idEstrangeiro")) : "",
-      valor:    tot ? toNum(txt(tot, "vNF")) : 0,
-      arquivo:  arquivo
-    }
-  };
+    return { ok:false, erro:"arquivo de evento/cancelamento" };
+  return { ok:false, erro:"layout nao reconhecido" };
 }
 
 function lerNFSe(inf, arquivo) {
-  // "Numero" tambem existe dentro de Endereco - por isso a busca e escopada
+  // "Numero" tambem aparece dentro de Endereco: a busca e escopada
   let numero = txtFilho(inf, "Numero");
   if (!numero) {
     const ident = filho(inf, "IdentificacaoNfse") || tag(inf, "IdentificacaoNfse");
@@ -457,37 +487,64 @@ function lerNFSe(inf, arquivo) {
   }
   if (!numero) numero = txt(inf, "NumeroNfse");
 
-  const servico = tag(inf, "Servico");
-  const valores = servico ? tag(servico, "Valores") : tag(inf, "Valores");
-  let valor = 0;
-  if (valores) valor = toNum(txtFilho(valores, "ValorServicos") || txtFilho(valores, "ValorLiquidoNfse"));
-  if (!valor) valor = toNum(txt(inf, "ValorLiquidoNfse") || txt(inf, "ValorServicos"));
+  const valoresNfse = filho(inf, "ValoresNfse");
+  const servico     = tag(inf, "Servico");
+  const valores     = servico ? tag(servico, "Valores") : null;
+
+  const vServicos = toNum(valores ? txtFilho(valores, "ValorServicos") : "") ||
+                    toNum(valoresNfse ? txtFilho(valoresNfse, "BaseCalculo") : "");
+  const vLiquido  = toNum(valoresNfse ? txtFilho(valoresNfse, "ValorLiquidoNfse") : "");
+  const vIss      = toNum(valoresNfse ? txtFilho(valoresNfse, "ValorIss") : "") ||
+                    toNum(valores ? txtFilho(valores, "ValorIss") : "");
 
   const tomador = tag(inf, "Tomador") || tag(inf, "TomadorServico") || tag(inf, "DadosTomador");
-  let cliente = "", docCli = "";
+  let cliente = "", doc_ = "";
   if (tomador) {
     cliente = txt(tomador, "RazaoSocial") || txt(tomador, "NomeFantasia") || txt(tomador, "xNome");
-    docCli  = txt(tomador, "Cnpj") || txt(tomador, "CNPJ") || txt(tomador, "Cpf") || txt(tomador, "CPF");
+    const cnpj = tag(tomador, "Cnpj") || tag(tomador, "CNPJ");
+    const cpf  = tag(tomador, "Cpf")  || tag(tomador, "CPF");
+    doc_ = cnpj ? normTxt(cnpj.textContent) : (cpf ? normTxt(cpf.textContent) : "");
   }
 
-  if (!numero && !valor) return { ok:false, erro:"NFSe sem numero/valor legiveis" };
+  if (!numero && !vServicos) return null;
+
+  const d = lerDiscriminacao(txtCru(inf, "Discriminacao"));
+  const rps = tag(inf, "IdentificacaoRps");
 
   return {
-    ok: true,
-    nf: {
-      modelo:   "NFSe",
-      numero:   numero,
-      serie:    txt(inf, "Serie") || "",
-      chave:    txt(inf, "CodigoVerificacao") || "",
-      emissao:  (txt(inf, "DataEmissao") || "").slice(0, 10),
-      cliente:  cliente,
-      doc:      docCli,
-      valor:    valor,
-      arquivo:  arquivo
-    }
+    modelo: "NFSe", arquivo,
+    numero, serie: rps ? txtFilho(rps, "Serie") : "",
+    chave: txtFilho(inf, "CodigoVerificacao"),
+    emissao: (txtFilho(inf, "DataEmissao") || "").slice(0, 10),
+    competenciaNota: (txt(inf, "Competencia") || "").slice(0, 10),
+    cliente, doc: doc_,
+    valorServicos: vServicos, valorLiquido: vLiquido, iss: vIss,
+    eventos: d.eventos, totaisDisc: d.totais,
+    vencimento: d.extras.vencimento || "", pedido: d.extras.pedido || "",
+    mesServico: d.extras.mesServico || ""
   };
 }
+
+function lerNFe(infNFe, arquivo) {
+  const ide  = tag(infNFe, "ide") || infNFe;
+  const dest = tag(infNFe, "dest");
+  const tot  = tag(infNFe, "ICMSTot");
+  const valor = tot ? toNum(txt(tot, "vNF")) : 0;
+  return {
+    modelo: "NFe", arquivo,
+    numero: txt(ide, "nNF"), serie: txt(ide, "serie"),
+    chave: (infNFe.getAttribute("Id") || "").replace(/\D/g, ""),
+    emissao: (txt(ide, "dhEmi") || txt(ide, "dEmi") || "").slice(0, 10),
+    competenciaNota: "",
+    cliente: dest ? txt(dest, "xNome") : "",
+    doc: dest ? (txt(dest, "CNPJ") || txt(dest, "CPF")) : "",
+    valorServicos: valor, valorLiquido: valor, iss: 0,
+    eventos: [], totaisDisc: {}, vencimento: "", pedido: "", mesServico: ""
+  };
+}
+
 </script>
+
 <script>
 /* ── leitor .xlsx nativo ──────────────────────────────────────
    Usa DecompressionStream do proprio navegador para abrir o ZIP.
@@ -617,6 +674,125 @@ async function lerXLSX(buffer) {
   return matriz;
 }
 
+
+/* ── demonstrativo de faturamento (.xlsx, um por NF) ──────────
+   Formato: titulo com o numero da NF, linha de CLIENTE, e blocos
+   por centro de custo. Cada bloco tem o seu proprio cabecalho e
+   termina num "Total do CCusto". As colunas de evento sao as que
+   comecam com o codigo da verba (ex.: "002-SALARIO MES (Valor)"). */
+
+const DEM_TOTAIS = { "SUBTOTAL":"subTotal", "ISS":"iss", "TRIBUTOFISCAL":"tributoFiscal",
+                     "TOTALGERAL":"totalGeral", "RETENCOES":"retencoes", "TOTALLIQUIDO":"totalLiquido" };
+
+function cel(linha, i) { return (linha && linha[i] != null) ? linha[i] : ""; }
+
+function mapaCabecalho(linha) {
+  const eventos = [], totais = {};
+  for (let i = 0; i < linha.length; i++) {
+    const h = normTxt(cel(linha, i));
+    if (!h) continue;
+    if (/^\d{3}\s*-/.test(h)) {
+      if (/\(Qtde\)\s*$/i.test(h)) continue;                 // quantidade nao e valor
+      const rotulo = h.replace(/\s*\(Valor\)\s*$/i, "").trim();
+      eventos.push({ col: i, rotulo, chave: canon(rotulo) });
+    } else if (DEM_TOTAIS[canon(h)]) {
+      totais[DEM_TOTAIS[canon(h)]] = i;
+    }
+  }
+  return { eventos, totais };
+}
+
+function lerDemonstrativo(matriz, arquivo) {
+  let nf = "", emissao = "", cliente = "", ds = "";
+
+  for (let i = 0; i < Math.min(matriz.length, 12); i++) {
+    const t = normTxt(cel(matriz[i], 0));
+    if (!t) continue;
+    const mNF = /Nota\s+Fiscal\s+(\d+)/i.exec(t);
+    if (mNF && !nf) nf = mNF[1];
+    const mEm = /Emiss[aã]o\s*:\s*(\d{2}\/\d{2}\/\d{4})/i.exec(t);
+    if (mEm && !emissao) emissao = mEm[1];
+    if (/^CLIENTE\s*:/i.test(t)) cliente = t.replace(/^CLIENTE\s*:\s*/i, "").trim();
+    if (/^N.?\s*DS\.?\s*:/i.test(t)) ds = t.replace(/^N.?\s*DS\.?\s*:\s*/i, "").trim();
+  }
+  if (!nf) return { ok:false, erro:"nao achei o numero da NF no titulo" };
+
+  const acumulado = new Map();      // chave -> {rotulo, valor}
+  const centros = [];
+  const totalNF = {};
+  let mapa = null, ccAtual = null, blocos = 0;
+
+  const somar = (mp, linha) => {
+    const out = new Map();
+    mp.eventos.forEach(e => {
+      const v = toNum(cel(linha, e.col));
+      if (v) out.set(e.chave, { rotulo: e.rotulo, valor: v });
+    });
+    return out;
+  };
+
+  for (let i = 0; i < matriz.length; i++) {
+    const linha = matriz[i];
+    const c0 = normTxt(cel(linha, 0));
+
+    if (c0 === "Emp" && normTxt(cel(linha, 1)) === "Fil") { mapa = mapaCabecalho(linha); blocos++; ccAtual = null; continue; }
+    if (!mapa) continue;
+
+    if (/^Total\s+do\s+CCusto/i.test(c0)) {
+      const ev = somar(mapa, linha);
+      ev.forEach((o, k) => {
+        const a = acumulado.get(k) || { rotulo: o.rotulo, valor: 0 };
+        a.valor += o.valor;
+        acumulado.set(k, a);
+      });
+      const t = {};
+      Object.keys(mapa.totais).forEach(nome => t[nome] = toNum(cel(linha, mapa.totais[nome])));
+      const qtd = /\((\d+)\s*Funcion/i.exec(c0);
+      centros.push({
+        codigo: ccAtual ? ccAtual.codigo : "", descricao: ccAtual ? ccAtual.descricao : "",
+        funcionarios: qtd ? Number(qtd[1]) : null, ...t
+      });
+      continue;
+    }
+
+    if (/^Total\s+da\s+NF/i.test(c0)) {
+      Object.keys(mapa.totais).forEach(nome => totalNF[nome] = toNum(cel(linha, mapa.totais[nome])));
+      const qtd = /\((\d+)\s*Funcion/i.exec(c0);
+      totalNF.funcionarios = qtd ? Number(qtd[1]) : null;
+      continue;
+    }
+
+    // linha de funcionario: guarda o centro de custo corrente
+    const cod = normTxt(cel(linha, 3));
+    if (cod) ccAtual = { codigo: cod, descricao: normTxt(cel(linha, 4)) };
+  }
+
+  if (!blocos) return { ok:false, erro:"nao achei o cabecalho de colunas" };
+
+  const eventos = [...acumulado.entries()]
+    .map(([chave, o]) => ({ chave, rotulo: o.rotulo, valor: round2(o.valor) }))
+    .sort((a, b) => b.valor - a.valor);
+
+  // sem a linha "Total da NF", soma os centros de custo
+  if (totalNF.totalGeral == null) {
+    ["subTotal","iss","tributoFiscal","totalGeral","retencoes","totalLiquido"].forEach(n => {
+      totalNF[n] = round2(centros.reduce((a, c) => a + (Number(c[n]) || 0), 0));
+    });
+  }
+
+  return { ok:true, dem: {
+    arquivo, nf, nfKey: normNF(nf), emissao, cliente, ds,
+    eventos, centros,
+    subTotal: round2(totalNF.subTotal || 0),
+    iss: round2(totalNF.iss || 0),
+    tributoFiscal: round2(totalNF.tributoFiscal || 0),
+    totalGeral: round2(totalNF.totalGeral || 0),
+    retencoes: round2(totalNF.retencoes || 0),
+    totalLiquido: round2(totalNF.totalLiquido || 0),
+    funcionarios: totalNF.funcionarios
+  }};
+}
+
 /* ── entrada de arquivos ─────────────────────────────────────── */
 
 function ligarDrop(zonaId, inputId, handler) {
@@ -643,12 +819,16 @@ function lerTexto(file) {
   });
 }
 
+function guardarRotulo(chave, rotulo) {
+  if (!ST.rotulos[chave] || rotulo.length > ST.rotulos[chave].length) ST.rotulos[chave] = rotulo;
+}
+
 /* ── passo 2: XMLs ───────────────────────────────────────────── */
 
 async function receberXML(files) {
   const comp = compAtual();
-  const descartarFora = document.getElementById("f-fora").value === "ignorar";
-  let novos = 0, ignorados = 0;
+  const descartar = document.getElementById("f-fora").value === "ignorar";
+  let novas = 0, ignoradas = 0, dups = 0;
 
   for (const f of files) {
     if (!/\.xml$/i.test(f.name)) {
@@ -658,332 +838,216 @@ async function receberXML(files) {
     const r = lerXML(await lerTexto(f), f.name);
     if (!r.ok) { ST.arquivos.push({ nome:f.name, status:"erro", msg:r.erro }); continue; }
 
-    const nf = r.nf;
-    nf.foraComp = !!nf.emissao && nf.emissao.slice(0, 7) !== comp.iso;
-    if (nf.foraComp && descartarFora) {
-      ST.arquivos.push({ nome:f.name, status:"erro", msg:"fora de " + comp.label });
-      ignorados++;
-      continue;
-    }
+    let n0 = 0, ig = 0, dp = 0, soma = 0;
+    r.notas.forEach(nf => {
+      nf.foraComp = !!nf.emissao && nf.emissao.slice(0, 7) !== comp.iso;
+      if (nf.foraComp && descartar) { ig++; return; }
+      const id = nf.modelo + "|" + normNF(nf.numero) + "|" + (nf.chave || nf.serie);
+      if (ST.notas.some(x => (x.modelo + "|" + normNF(x.numero) + "|" + (x.chave || x.serie)) === id)) { dp++; return; }
+      nf.eventos.forEach(e => guardarRotulo(e.chave, e.rotulo));
+      ST.notas.push(nf);
+      soma += nf.valorServicos;
+      n0++;
+    });
 
-    const dedupe = nf.chave || (nf.modelo + "|" + normNF(nf.numero) + "|" + nf.serie);
-    if (ST.nfs.some(x => (x.chave || (x.modelo + "|" + normNF(x.numero) + "|" + x.serie)) === dedupe)) {
-      ST.arquivos.push({ nome:f.name, status:"dup", msg:"NF " + nf.numero + " ja importada" });
-      continue;
-    }
-
-    ST.nfs.push(nf);
+    novas += n0; ignoradas += ig; dups += dp;
     ST.arquivos.push({
       nome: f.name,
-      status: nf.foraComp ? "aviso" : "ok",
-      msg: "NF " + nf.numero + " - " + brl(nf.valor) + (nf.foraComp ? " (fora de " + comp.label + ")" : "")
+      status: n0 ? (ig || dp ? "aviso" : "ok") : "erro",
+      msg: n0 ? n0 + " nota(s) - " + brl(soma) + (ig ? " | " + ig + " fora da competencia" : "") + (dp ? " | " + dp + " duplicada(s)" : "")
+              : (dp ? "todas ja importadas" : "nenhuma nota aproveitada")
     });
-    novos++;
   }
 
   renderXML();
-  toast(novos + " nota(s) importada(s)" + (ignorados ? ", " + ignorados + " descartada(s)" : ""));
+  toast(novas + " nota(s) importada(s)" + (ignoradas ? ", " + ignoradas + " fora da competencia" : "") + (dups ? ", " + dups + " duplicada(s)" : ""));
 }
 
 function renderXML() {
   const lista = document.getElementById("xml-list");
-  const total = ST.nfs.reduce((a, n) => a + n.valor, 0);
-
+  const total = ST.notas.reduce((a, n) => a + n.valorServicos, 0);
   document.getElementById("nf-resumo").textContent =
-    ST.nfs.length ? ST.nfs.length + " nota(s) - " + brl(total) : "nenhum arquivo";
-  document.getElementById("sn-2").classList.toggle("done", ST.nfs.length > 0);
-
-  if (!ST.arquivos.length) {
-    lista.classList.add("hidden");
-    document.getElementById("xml-actions").classList.add("hidden");
-  } else {
-    lista.classList.remove("hidden");
-    document.getElementById("xml-actions").classList.remove("hidden");
-    const cls = { ok:"badge-ok", aviso:"badge-warn", dup:"badge-info", erro:"badge-err" };
-    const rot = { ok:"OK", aviso:"ATENCAO", dup:"DUPLICADO", erro:"ERRO" };
-    lista.innerHTML = ST.arquivos.map(a => `
-      <div class="file-item">
-        <span class="file-name" title="${esc(a.nome)}">${esc(a.nome)}</span>
-        <span style="display:flex;gap:8px;align-items:center">
-          <span class="muted">${esc(a.msg)}</span>
-          <span class="badge ${cls[a.status]}">${rot[a.status]}</span>
-        </span>
-      </div>`).join("");
-  }
+    ST.notas.length ? ST.notas.length + " nota(s) - " + brl(total) : "nenhum arquivo";
+  document.getElementById("sn-2").classList.toggle("done", ST.notas.length > 0);
+  pintarLista(lista, "xml-actions", ST.arquivos);
   atualizarBotoes();
 }
 
 function limparXML() {
-  ST.nfs = []; ST.arquivos = []; ST.res = null;
+  ST.notas = []; ST.arquivos = []; ST.res = null;
   renderXML(); renderConciliacao();
 }
 
-/* ── passo 3: rateio ─────────────────────────────────────────── */
+/* ── passo 3: demonstrativos ─────────────────────────────────── */
 
-function csvParse(texto) {
-  const sep = (texto.split("\n")[0].match(/;/g) || []).length >
-              (texto.split("\n")[0].match(/,/g) || []).length ? ";" : ",";
-  const linhas = [];
-  let campo = "", linha = [], aspas = false;
-  for (let i = 0; i < texto.length; i++) {
-    const c = texto[i];
-    if (aspas) {
-      if (c === '"') { if (texto[i+1] === '"') { campo += '"'; i++; } else aspas = false; }
-      else campo += c;
-    } else if (c === '"') aspas = true;
-    else if (c === sep) { linha.push(campo); campo = ""; }
-    else if (c === "\n") { linha.push(campo); linhas.push(linha); linha = []; campo = ""; }
-    else if (c !== "\r") campo += c;
-  }
-  if (campo || linha.length) { linha.push(campo); linhas.push(linha); }
-  return linhas.filter(l => l.some(c => String(c).trim() !== ""));
-}
-
-function matrizParaObjetos(matriz) {
-  if (!matriz.length) return { headers: [], rows: [] };
-  // cabecalho = primeira linha com pelo menos 2 celulas preenchidas
-  let hi = 0;
-  for (let i = 0; i < Math.min(matriz.length, 15); i++) {
-    if (matriz[i].filter(c => String(c).trim() !== "").length >= 2) { hi = i; break; }
-  }
-  const headers = matriz[hi].map((h, i) => normTxt(h) || "Coluna " + (i + 1));
-  const rows = matriz.slice(hi + 1)
-    .filter(l => l.some(c => String(c).trim() !== ""))
-    .map(l => { const o = {}; headers.forEach((h, i) => o[h] = l[i]); return o; });
-  return { headers, rows };
-}
-
-async function receberRateio(files) {
-  const f = files[0];
-  let dados;
-
-  if (/\.csv$/i.test(f.name)) {
-    dados = matrizParaObjetos(csvParse(await lerTexto(f)));
-  } else if (/\.xlsx$/i.test(f.name)) {
-    try {
-      dados = matrizParaObjetos(await lerXLSX(await f.arrayBuffer()));
-    } catch (e) {
-      toast("Nao consegui ler o .xlsx: " + e.message);
-      return;
+async function receberDem(files) {
+  let novos = 0;
+  for (const f of files) {
+    if (!/\.xlsx$/i.test(f.name)) {
+      ST.demoArqs.push({ nome:f.name, status:"erro", msg:"use .xlsx" });
+      continue;
     }
-  } else {
-    toast("Formato nao suportado - use .xlsx ou .csv (.xls antigo precisa ser convertido).");
-    return;
+    let matriz;
+    try { matriz = await lerXLSX(await f.arrayBuffer()); }
+    catch (e) { ST.demoArqs.push({ nome:f.name, status:"erro", msg:e.message }); continue; }
+
+    const r = lerDemonstrativo(matriz, f.name);
+    if (!r.ok) { ST.demoArqs.push({ nome:f.name, status:"erro", msg:r.erro }); continue; }
+
+    if (ST.demos.some(d => d.nfKey === r.dem.nfKey)) {
+      ST.demoArqs.push({ nome:f.name, status:"dup", msg:"NF " + r.dem.nf + " ja importada" });
+      continue;
+    }
+    r.dem.eventos.forEach(e => guardarRotulo(e.chave, e.rotulo));
+    ST.demos.push(r.dem);
+    ST.demoArqs.push({
+      nome: f.name, status: "ok",
+      msg: "NF " + r.dem.nf + " - " + brl(r.dem.totalGeral) + " - " + r.dem.centros.length + " c.custo"
+    });
+    novos++;
   }
-
-  if (!dados.rows.length) { toast("Nao encontrei linhas nessa planilha."); return; }
-
-  ST.headers    = dados.headers;
-  ST.rateioRows = dados.rows;
-  ST.ratArquivo = f.name;
-  ST.res = null;
-
-  montarMapeamento();
-  renderRateio();
-  renderConciliacao();
-  toast(dados.rows.length + " linha(s) de rateio lidas");
+  renderDem();
+  toast(novos + " demonstrativo(s) lido(s)");
 }
 
-const PALPITES = {
-  nf:      [/^n?\.?\s*nf/i, /nota/i, /nfe/i, /nfse/i, /numero.*(nota|nf)/i, /(nf|nota).*numero/i, /doc/i],
-  evento:  [/evento/i, /rubrica/i, /centro/i, /descri/i, /servi/i, /item/i, /conta/i],
-  valor:   [/valor/i, /vlr/i, /^total/i, /montante/i, /^r\$/i],
-  cliente: [/cliente/i, /tomador/i, /raz[ãa]o/i, /nome/i, /sacado/i]
-};
-
-function palpitar(campo, headers, jaUsados) {
-  for (const rx of PALPITES[campo]) {
-    const h = headers.find(x => rx.test(x) && !jaUsados.includes(x));
-    if (h) return h;
-  }
-  return "";
-}
-
-function montarMapeamento() {
-  const salvo = JSON.parse(localStorage.getItem(MAP_KEY) || "null") || {};
-  const usados = [];
-  ["nf", "evento", "valor", "cliente"].forEach(campo => {
-    const sel = document.getElementById("m-" + campo);
-    const opcional = campo === "cliente";
-    sel.innerHTML = (opcional ? '<option value="">— nao usar —</option>' : '<option value="">— selecione —</option>')
-      + ST.headers.map(h => `<option value="${esc(h)}">${esc(h)}</option>`).join("");
-    let escolha = (salvo[campo] && ST.headers.includes(salvo[campo])) ? salvo[campo] : palpitar(campo, ST.headers, usados);
-    if (escolha) usados.push(escolha);
-    sel.value = escolha || "";
-    ST.map[campo] = sel.value;
-  });
-  document.getElementById("map-box").classList.remove("hidden");
-}
-
-function salvarMap() {
-  ["nf", "evento", "valor", "cliente"].forEach(c => ST.map[c] = document.getElementById("m-" + c).value);
-  localStorage.setItem(MAP_KEY, JSON.stringify(ST.map));
+function renderDem() {
+  const total = ST.demos.reduce((a, d) => a + d.totalGeral, 0);
+  document.getElementById("dem-resumo").textContent =
+    ST.demos.length ? ST.demos.length + " demonstrativo(s) - " + brl(total) : "nenhum arquivo";
+  document.getElementById("sn-3").classList.toggle("done", ST.demos.length > 0);
+  pintarLista(document.getElementById("dem-list"), "dem-actions", ST.demoArqs);
   ST.res = null;
   renderConciliacao();
   atualizarBotoes();
 }
 
-function renderRateio() {
-  document.getElementById("rat-resumo").textContent =
-    ST.rateioRows.length ? ST.ratArquivo + " - " + ST.rateioRows.length + " linha(s)" : "nenhum arquivo";
-  document.getElementById("sn-3").classList.toggle("done", ST.rateioRows.length > 0);
-  atualizarBotoes();
+function limparDem() {
+  ST.demos = []; ST.demoArqs = []; ST.res = null;
+  renderDem(); renderConciliacao();
 }
 
-function limparRateio() {
-  ST.rateioRows = []; ST.headers = []; ST.ratArquivo = ""; ST.res = null;
-  document.getElementById("map-box").classList.add("hidden");
-  renderRateio(); renderConciliacao();
-}
-
-function mapeamentoCompleto() {
-  return !!(ST.map.nf && ST.map.evento && ST.map.valor);
+function pintarLista(el, acoesId, itens) {
+  const acoes = document.getElementById(acoesId);
+  if (!itens.length) { el.classList.add("hidden"); acoes.classList.add("hidden"); return; }
+  el.classList.remove("hidden"); acoes.classList.remove("hidden");
+  const cls = { ok:"badge-ok", aviso:"badge-warn", dup:"badge-info", erro:"badge-err" };
+  const rot = { ok:"OK", aviso:"ATENCAO", dup:"DUPLICADO", erro:"ERRO" };
+  el.innerHTML = itens.map(a => `
+    <div class="file-item">
+      <span class="file-name" title="${esc(a.nome)}">${esc(a.nome)}</span>
+      <span style="display:flex;gap:8px;align-items:center">
+        <span class="muted">${esc(a.msg)}</span>
+        <span class="badge ${cls[a.status]}">${rot[a.status]}</span>
+      </span>
+    </div>`).join("");
 }
 
 function atualizarBotoes() {
-  const pronto = ST.nfs.length > 0 && ST.rateioRows.length > 0 && mapeamentoCompleto();
-  document.getElementById("btn-conc").disabled = !pronto;
+  document.getElementById("btn-conc").disabled = ST.notas.length === 0;
   const temRes = !!(ST.res && ST.res.linhas.length);
-  document.getElementById("btn-xlsx").disabled = !temRes;
-  document.getElementById("btn-csv").disabled  = !temRes;
-  document.getElementById("btn-copy").disabled = !temRes;
+  ["btn-xlsx", "btn-csv", "btn-copy"].forEach(i => document.getElementById(i).disabled = !temRes);
 }
+
 </script>
+
 <script>
 /* ── passo 4: conciliacao ────────────────────────────────────── */
 
 function conciliar() {
   const comp = compAtual();
   const tol  = tolerancia();
-
-  // 1. normaliza o rateio conforme o de-para de colunas
-  const itens = [];
-  ST.rateioRows.forEach((row, i) => {
-    const nfRaw  = row[ST.map.nf];
-    const evento = normTxt(row[ST.map.evento]);
-    const valor  = toNum(row[ST.map.valor]);
-    if (!normTxt(nfRaw) && !evento && !valor) return;   // linha em branco
-    itens.push({
-      linha:   i + 2,
-      nfRaw:   normTxt(nfRaw),
-      nfKey:   normNF(nfRaw),
-      evento:  evento || "(sem evento)",
-      valor:   valor,
-      cliente: ST.map.cliente ? normTxt(row[ST.map.cliente]) : ""
-    });
-  });
-
-  // o mesmo evento pode aparecer duas vezes na mesma nota: a chave ganha sufixo
-  const idsUsados = new Map();
-  function chaveUnica(base) {
-    const n = (idsUsados.get(base) || 0) + 1;
-    idsUsados.set(base, n);
-    return n === 1 ? base : base + "#" + n;
-  }
+  const base = baseValor();
 
   const porNF = new Map();
-  itens.forEach(it => {
-    if (!porNF.has(it.nfKey)) porNF.set(it.nfKey, []);
-    porNF.get(it.nfKey).push(it);
-  });
+  ST.demos.forEach(d => porNF.set(d.nfKey, d));
 
-  // 2. cruza cada nota com o seu rateio
-  const linhas = [], problemas = [];
-  const casadas = new Set();
+  const linhas = [], problemas = [], notas = [];
+  const usados = new Set();
+  const totalEvento = new Map();
 
-  ST.nfs.forEach(nf => {
-    const key = normNF(nf.numero);
-    const its = porNF.get(key) || [];
-    if (its.length) casadas.add(key);
+  ST.notas.forEach(nf => {
+    const key  = normNF(nf.numero);
+    const dem  = porNF.get(key) || null;
+    if (dem) usados.add(key);
 
-    const soma = round2(its.reduce((a, i) => a + i.valor, 0));
-    const dif  = round2(soma - nf.valor);
-    let status;
-    if (!its.length)                 status = "SEM RATEIO";
-    else if (Math.abs(dif) > tol)    status = "DIVERGENTE";
-    else if (nf.foraComp)            status = "FORA DA COMPETENCIA";
-    else                             status = "OK";
+    const soma = round2(nf.eventos.reduce((a, e) => a + e.valor, 0));
+    const difDisc = round2(soma - nf.valorServicos);
+    const difDem  = dem ? round2(dem.totalGeral - nf.valorServicos) : null;
+
+    let status = "OK";
+    if (!nf.eventos.length)                       status = "SEM EVENTOS";
+    else if (Math.abs(difDisc) > tol)             status = "DISCRIMINACAO NAO FECHA";
+    else if (dem && Math.abs(difDem) > tol)       status = "DEMONSTRATIVO DIVERGENTE";
+    else if (nf.foraComp)                         status = "FORA DA COMPETENCIA";
 
     if (status !== "OK") {
       problemas.push({
-        nf: nf.numero, cliente: nf.cliente, status: status,
-        valorNF: nf.valor, somaRateio: soma, diferenca: dif,
-        detalhe: !its.length ? "Nota sem nenhum evento de rateio"
-               : Math.abs(dif) > tol ? "Soma do rateio difere do total da nota em " + brl(dif)
-               : "Emissao em " + (nf.emissao || "?") + ", fora de " + comp.label
+        nf: nf.numero, cliente: nf.cliente, status,
+        valorNF: nf.valorServicos, soma: dem && status === "DEMONSTRATIVO DIVERGENTE" ? dem.totalGeral : soma,
+        diferenca: status === "DEMONSTRATIVO DIVERGENTE" ? difDem : difDisc,
+        detalhe:
+          status === "SEM EVENTOS" ? "A discriminacao da nota nao trouxe nenhum evento reconhecivel"
+        : status === "DISCRIMINACAO NAO FECHA" ? "Os eventos da propria nota somam " + brl(soma) + ", e nao " + brl(nf.valorServicos)
+        : status === "DEMONSTRATIVO DIVERGENTE" ? "O demonstrativo (" + dem.arquivo + ") totaliza " + brl(dem.totalGeral)
+        : "Emissao em " + (nf.emissao || "?") + ", fora de " + comp.label
       });
     }
 
-    const base = {
-      competencia: comp.label, numero: nf.numero, serie: nf.serie,
-      emissao: nf.emissao, cliente: nf.cliente, doc: nf.doc,
-      valorNF: nf.valor, chave: nf.chave, modelo: nf.modelo, status: status
-    };
-
-    if (!its.length) {
-      linhas.push({ ...base, evento: "(sem rateio)", valorEvento: nf.valor,
-                    idUnico: chaveUnica(comp.label + "|" + key + "|SEM-RATEIO") });
-    } else {
-      its.forEach(it => linhas.push({
-        ...base,
-        cliente: nf.cliente || it.cliente,
-        evento: it.evento,
-        valorEvento: it.valor,
-        idUnico: chaveUnica(comp.label + "|" + key + "|" + it.evento.toUpperCase())
-      }));
-    }
-  });
-
-  // 3. rateio orfao: evento sem nota correspondente
-  porNF.forEach((its, key) => {
-    if (casadas.has(key)) return;
-    const soma = round2(its.reduce((a, i) => a + i.valor, 0));
-    problemas.push({
-      nf: its[0].nfRaw || "(vazio)", cliente: its[0].cliente, status: "SEM NF",
-      valorNF: 0, somaRateio: soma, diferenca: soma,
-      detalhe: "Rateio sem XML correspondente (linha " + its[0].linha + " da planilha)"
+    nf.eventos.forEach(e => {
+      const t = totalEvento.get(e.chave) || { chave:e.chave, total:0, notas:new Set() };
+      t.total += e.valor; t.notas.add(nf.numero);
+      totalEvento.set(e.chave, t);
+      linhas.push({
+        competencia: comp.label, numero: nf.numero, cliente: nf.cliente, doc: nf.doc,
+        emissao: nf.emissao, evento: ST.rotulos[e.chave] || e.rotulo, chave: e.chave,
+        valorEvento: round2(e.valor), valorNF: nf.valorServicos, status,
+        idUnico: comp.label + "|" + key + "|" + e.chave
+      });
     });
-    its.forEach(it => linhas.push({
-      competencia: comp.label, numero: it.nfRaw, serie: "", emissao: "",
-      cliente: it.cliente, doc: "", valorNF: 0, chave: "", modelo: "",
-      status: "SEM NF", evento: it.evento, valorEvento: it.valor,
-      idUnico: chaveUnica(comp.label + "|" + (key || "SEM-NF") + "|" + it.evento.toUpperCase())
-    }));
+
+    notas.push({
+      nota: nf, dem, soma, difDisc, difDem, status, key,
+      valorConsiderado: base === "liquido" ? nf.valorLiquido : nf.valorServicos
+    });
   });
 
-  // 4. consolidado por evento
-  const mapEv = new Map();
-  linhas.forEach(l => {
-    if (!mapEv.has(l.evento)) mapEv.set(l.evento, { evento: l.evento, total: 0, nfs: new Set(), qtd: 0 });
-    const e = mapEv.get(l.evento);
-    e.total += l.valorEvento; e.qtd++; e.nfs.add(l.numero);
+  // demonstrativo sem nota correspondente
+  ST.demos.forEach(d => {
+    if (usados.has(d.nfKey)) return;
+    problemas.push({
+      nf: d.nf, cliente: d.cliente, status: "SEM NF",
+      valorNF: 0, soma: d.totalGeral, diferenca: d.totalGeral,
+      detalhe: "Demonstrativo sem a NF correspondente no XML (" + d.arquivo + ")"
+    });
   });
-  const eventos = [...mapEv.values()]
-    .map(e => ({ evento: e.evento, total: round2(e.total), qtdNFs: e.nfs.size, qtdLinhas: e.qtd }))
+
+  const eventos = [...totalEvento.values()]
+    .map(t => ({ chave:t.chave, rotulo: ST.rotulos[t.chave] || t.chave,
+                 total: round2(t.total), qtdNotas: t.notas.size }))
     .sort((a, b) => b.total - a.total);
 
   ST.res = {
-    linhas, problemas, eventos, comp,
-    totalNF:     round2(ST.nfs.reduce((a, n) => a + n.valor, 0)),
-    totalRateio: round2(itens.reduce((a, i) => a + i.valor, 0)),
-    okCount:     ST.nfs.filter(n => {
-                   const its = porNF.get(normNF(n.numero)) || [];
-                   return its.length && Math.abs(round2(its.reduce((a,i)=>a+i.valor,0) - n.valor)) <= tol;
-                 }).length
+    comp, base, linhas, problemas, notas, eventos,
+    colunas: eventos.map(e => e.chave),
+    totalServicos: round2(ST.notas.reduce((a, n) => a + n.valorServicos, 0)),
+    totalLiquido:  round2(ST.notas.reduce((a, n) => a + n.valorLiquido, 0)),
+    totalEventos:  round2(eventos.reduce((a, e) => a + e.total, 0)),
+    okCount: notas.filter(n => n.status === "OK").length
   };
 
   renderConciliacao();
   atualizarBotoes();
-  document.getElementById("sn-4").classList.toggle("done", ST.res.problemas.length === 0);
-  toast(problemas.length ? problemas.length + " divergencia(s) a resolver" : "Conciliacao sem divergencias");
+  document.getElementById("sn-4").classList.toggle("done", problemas.length === 0);
+  toast(problemas.length ? problemas.length + " nota(s) a conferir" : "Tudo conciliado");
 }
 
 /* ── renderizacao ────────────────────────────────────────────── */
 
 const BADGE = {
-  "OK": "badge-ok", "DIVERGENTE": "badge-err", "SEM RATEIO": "badge-warn",
-  "SEM NF": "badge-err", "FORA DA COMPETENCIA": "badge-warn"
+  "OK": "badge-ok", "DISCRIMINACAO NAO FECHA": "badge-err", "SEM EVENTOS": "badge-warn",
+  "DEMONSTRATIVO DIVERGENTE": "badge-err", "SEM NF": "badge-err", "FORA DA COMPETENCIA": "badge-warn"
 };
+const LIMITE_TELA = 250;
 
 function renderConciliacao() {
   const vazio = document.getElementById("conc-vazio");
@@ -992,78 +1056,129 @@ function renderConciliacao() {
   vazio.classList.add("hidden"); box.classList.remove("hidden");
 
   const r = ST.res;
-  const dif = round2(r.totalRateio - r.totalNF);
+  const difTotal = round2(r.totalEventos - r.totalServicos);
   document.getElementById("conc-metrics").innerHTML = `
-    <div class="metric"><div class="metric-label">Notas</div><div class="metric-value">${ST.nfs.length}</div></div>
-    <div class="metric"><div class="metric-label">Total das notas</div><div class="metric-value">${brl(r.totalNF)}</div></div>
-    <div class="metric"><div class="metric-label">Total do rateio</div><div class="metric-value">${brl(r.totalRateio)}</div></div>
-    <div class="metric ${Math.abs(dif) <= tolerancia() ? "ok" : "err"}">
-      <div class="metric-label">Diferenca</div><div class="metric-value">${brl(dif)}</div></div>
-    <div class="metric ok"><div class="metric-label">Notas conciliadas</div><div class="metric-value">${r.okCount}</div></div>
+    <div class="metric"><div class="metric-label">Notas</div><div class="metric-value">${r.notas.length}</div></div>
+    <div class="metric"><div class="metric-label">Valor dos servicos</div><div class="metric-value">${brl(r.totalServicos)}</div></div>
+    <div class="metric"><div class="metric-label">Valor liquido</div><div class="metric-value">${brl(r.totalLiquido)}</div></div>
+    <div class="metric"><div class="metric-label">Eventos distintos</div><div class="metric-value">${r.eventos.length}</div></div>
+    <div class="metric ${Math.abs(difTotal) <= tolerancia() * r.notas.length ? "ok" : "warn"}">
+      <div class="metric-label">Soma dos eventos</div><div class="metric-value">${brl(r.totalEventos)}</div></div>
     <div class="metric ${r.problemas.length ? "err" : "ok"}">
-      <div class="metric-label">Divergencias</div><div class="metric-value">${r.problemas.length}</div></div>`;
+      <div class="metric-label">A conferir</div><div class="metric-value">${r.problemas.length}</div></div>`;
 
-  // detalhe
-  const totDet = round2(r.linhas.reduce((a, l) => a + l.valorEvento, 0));
-  document.getElementById("tab-detalhe").innerHTML = `
+  renderControle();
+  renderEventos();
+  renderDetalhe();
+  renderProblemas();
+}
+
+function renderControle() {
+  const r = ST.res;
+  const cols = r.colunas;
+  const linhas = r.notas.slice(0, LIMITE_TELA);
+  const valPorNota = n => {
+    const m = new Map();
+    n.nota.eventos.forEach(e => m.set(e.chave, (m.get(e.chave) || 0) + e.valor));
+    return m;
+  };
+  document.getElementById("tab-controle").innerHTML = `
+    ${r.notas.length > LIMITE_TELA ? `<div class="alert alert-info"><span>Mostrando as primeiras ${LIMITE_TELA} de ${r.notas.length} notas &mdash; o arquivo exportado traz todas.</span></div>` : ""}
     <div class="table-wrap"><table>
       <thead><tr>
-        <th>NF</th><th>Emissao</th><th>Cliente</th><th>Evento</th>
-        <th style="text-align:right">Valor evento</th><th style="text-align:right">Total NF</th><th>Status</th>
+        <th>NF</th><th>Emissao</th><th>Cliente</th>
+        <th style="text-align:right">Servicos</th><th style="text-align:right">Liquido</th>
+        ${cols.map(c => `<th style="text-align:right">${esc(ST.rotulos[c] || c)}</th>`).join("")}
+        <th>Status</th>
       </tr></thead>
-      <tbody>${r.linhas.map(l => `
-        <tr>
-          <td class="mono">${esc(l.numero)}${l.serie ? "/" + esc(l.serie) : ""}</td>
-          <td class="mono">${esc(l.emissao)}</td>
-          <td>${esc(l.cliente)}</td>
-          <td>${esc(l.evento)}</td>
-          <td class="num">${brl(l.valorEvento)}</td>
-          <td class="num muted">${l.valorNF ? brl(l.valorNF) : "—"}</td>
-          <td><span class="badge ${BADGE[l.status] || "badge-info"}">${esc(l.status)}</span></td>
-        </tr>`).join("")}</tbody>
-      <tfoot><tr><td colspan="4">${r.linhas.length} linha(s)</td>
-        <td class="num">${brl(totDet)}</td><td colspan="2"></td></tr></tfoot>
+      <tbody>${linhas.map(n => {
+        const m = valPorNota(n);
+        return `<tr>
+          <td class="mono">${esc(n.nota.numero)}</td>
+          <td class="mono">${esc(n.nota.emissao)}</td>
+          <td>${esc(n.nota.cliente)}</td>
+          <td class="num">${brl(n.nota.valorServicos)}</td>
+          <td class="num muted">${brl(n.nota.valorLiquido)}</td>
+          ${cols.map(c => `<td class="num">${m.has(c) ? brl(m.get(c)) : "<span class='muted'>—</span>"}</td>`).join("")}
+          <td><span class="badge ${BADGE[n.status] || "badge-info"}">${esc(n.status)}</span></td>
+        </tr>`;
+      }).join("")}</tbody>
+      <tfoot><tr>
+        <td colspan="3">${r.notas.length} nota(s)</td>
+        <td class="num">${brl(r.totalServicos)}</td>
+        <td class="num">${brl(r.totalLiquido)}</td>
+        ${cols.map(c => {
+          const e = r.eventos.find(x => x.chave === c);
+          return `<td class="num">${brl(e ? e.total : 0)}</td>`;
+        }).join("")}
+        <td></td>
+      </tr></tfoot>
     </table></div>`;
+}
 
-  // consolidado por evento
-  const totEv = round2(r.eventos.reduce((a, e) => a + e.total, 0));
+function renderEventos() {
+  const r = ST.res;
   document.getElementById("tab-eventos").innerHTML = `
     <div class="table-wrap"><table>
       <thead><tr><th>Evento</th><th style="text-align:right">Notas</th>
-        <th style="text-align:right">Lancamentos</th><th style="text-align:right">Total</th></tr></thead>
+        <th style="text-align:right">Total no mes</th><th style="text-align:right">% do faturado</th></tr></thead>
       <tbody>${r.eventos.map(e => `
-        <tr><td>${esc(e.evento)}</td>
-          <td class="num">${e.qtdNFs}</td><td class="num">${e.qtdLinhas}</td>
-          <td class="num">${brl(e.total)}</td></tr>`).join("")}</tbody>
-      <tfoot><tr><td colspan="3">${r.eventos.length} evento(s) &mdash; total lancado no controle</td>
-        <td class="num">${brl(totEv)}</td></tr></tfoot>
+        <tr><td>${esc(e.rotulo)}</td><td class="num">${e.qtdNotas}</td>
+          <td class="num">${brl(e.total)}</td>
+          <td class="num muted">${r.totalServicos ? (e.total / r.totalServicos * 100).toFixed(1) + "%" : "—"}</td>
+        </tr>`).join("")}</tbody>
+      <tfoot><tr><td>${r.eventos.length} evento(s)</td><td></td>
+        <td class="num">${brl(r.totalEventos)}</td>
+        <td class="num">${r.totalServicos ? (r.totalEventos / r.totalServicos * 100).toFixed(1) + "%" : "—"}</td></tr></tfoot>
     </table></div>`;
+}
 
-  // divergencias
+function renderDetalhe() {
+  const r = ST.res;
+  const linhas = r.linhas.slice(0, LIMITE_TELA * 4);
+  document.getElementById("tab-detalhe").innerHTML = `
+    ${r.linhas.length > linhas.length ? `<div class="alert alert-info"><span>Mostrando ${linhas.length} de ${r.linhas.length} lancamentos &mdash; o arquivo exportado traz todos.</span></div>` : ""}
+    <div class="table-wrap"><table>
+      <thead><tr><th>NF</th><th>Cliente</th><th>Evento</th>
+        <th style="text-align:right">Valor</th><th style="text-align:right">Total NF</th><th>Status</th></tr></thead>
+      <tbody>${linhas.map(l => `
+        <tr><td class="mono">${esc(l.numero)}</td><td>${esc(l.cliente)}</td><td>${esc(l.evento)}</td>
+          <td class="num">${brl(l.valorEvento)}</td>
+          <td class="num muted">${brl(l.valorNF)}</td>
+          <td><span class="badge ${BADGE[l.status] || "badge-info"}">${esc(l.status)}</span></td>
+        </tr>`).join("")}</tbody>
+    </table></div>`;
+}
+
+function renderProblemas() {
+  const r = ST.res;
   document.getElementById("tab-probs").innerHTML = r.problemas.length ? `
-    <div class="alert alert-warn"><span>Resolva estes itens antes de gravar na Controle de Faturamento.</span></div>
+    <div class="alert alert-warn"><span>Estas notas nao fecham sozinhas. Confira antes de lancar no controle.</span></div>
     <div class="table-wrap"><table>
       <thead><tr><th>NF</th><th>Cliente</th><th>Ocorrencia</th>
-        <th style="text-align:right">Total NF</th><th style="text-align:right">Soma rateio</th>
+        <th style="text-align:right">Valor da NF</th><th style="text-align:right">Soma apurada</th>
         <th style="text-align:right">Diferenca</th><th>O que houve</th></tr></thead>
       <tbody>${r.problemas.map(p => `
         <tr><td class="mono">${esc(p.nf)}</td><td>${esc(p.cliente)}</td>
           <td><span class="badge ${BADGE[p.status] || "badge-err"}">${esc(p.status)}</span></td>
           <td class="num">${p.valorNF ? brl(p.valorNF) : "—"}</td>
-          <td class="num">${brl(p.somaRateio)}</td>
+          <td class="num">${brl(p.soma)}</td>
           <td class="num" style="color:var(--red)">${brl(p.diferenca)}</td>
           <td class="muted">${esc(p.detalhe)}</td></tr>`).join("")}</tbody>
     </table></div>`
-    : `<div class="alert alert-info"><span>Nenhuma divergencia: a soma do rateio bate com o total de todas as notas.</span></div>`;
+    : `<div class="alert alert-info"><span>Todas as notas fecham: a soma dos eventos bate com o valor de cada nota.</span></div>`;
 }
 
 function aba(btn) {
   document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
   btn.classList.add("active");
-  ["detalhe", "eventos", "probs"].forEach(t =>
+  ["controle", "eventos", "detalhe", "probs"].forEach(t =>
     document.getElementById("tab-" + t).classList.toggle("hidden", t !== btn.dataset.tab));
 }
 
+</script>
+
+<script>
 /* ── gerador .xlsx nativo (ZIP + SpreadsheetML, sem dependencia) ──
    A exportacao e o produto final da ferramenta, entao ela nao pode
    depender de CDN: o arquivo abaixo escreve o .xlsx do zero.       */
@@ -1198,17 +1313,31 @@ function gerarXLSX(abas) {
   return zipar(arqs);
 }
 
+
 /* ── passo 5: saida ──────────────────────────────────────────── */
 
-const COLS_CONTROLE = ["Competencia", "Modelo", "Numero NF", "Serie", "Data Emissao", "Cliente",
-                       "CNPJ/CPF", "Evento", "Valor Evento", "Valor Total NF", "Chave/Cod Verificacao",
-                       "Status Conciliacao", "ID_Unico"];
+function colsControle() {
+  return ["Competencia", "Numero NF", "Serie", "Data Emissao", "Cliente", "CNPJ/CPF",
+          "Valor Servicos", "Valor Liquido", "ISS", "Vencimento", "Pedido", "Mes Servico",
+          ...ST.res.colunas.map(c => ST.rotulos[c] || c),
+          "Soma dos Eventos", "Diferenca", "Status", "ID_Unico"];
+}
 
 function linhasControle() {
-  return ST.res.linhas.map(l => [
-    l.competencia, l.modelo, l.numero, l.serie, l.emissao, l.cliente, l.doc,
-    l.evento, round2(l.valorEvento), round2(l.valorNF), l.chave, l.status, l.idUnico
-  ]);
+  const r = ST.res;
+  return r.notas.map(n => {
+    const nf = n.nota;
+    const m = new Map();
+    nf.eventos.forEach(e => m.set(e.chave, round2((m.get(e.chave) || 0) + e.valor)));
+    return [
+      r.comp.label, nf.numero, nf.serie, nf.emissao, nf.cliente, nf.doc,
+      round2(nf.valorServicos), round2(nf.valorLiquido), round2(nf.iss),
+      nf.vencimento, nf.pedido, nf.mesServico,
+      ...r.colunas.map(c => (m.has(c) ? m.get(c) : "")),
+      round2(n.soma), round2(n.difDisc), n.status,
+      r.comp.label + "|" + n.key
+    ];
+  });
 }
 
 function baixar(blob, nome) {
@@ -1225,31 +1354,64 @@ function nomeArquivo(ext) {
 
 function exportarXLSX() {
   const r = ST.res;
-  const totalGeral = round2(r.eventos.reduce((a, e) => a + e.total, 0));
-  baixar(gerarXLSX([
-    { nome: "Controle_Faturamento", linhas: [COLS_CONTROLE, ...linhasControle()] },
+  const abas = [
+    { nome: "Controle_Faturamento", linhas: [colsControle(), ...linhasControle()] },
+    { nome: "Eventos_Detalhe", linhas: [
+        ["Competencia", "Numero NF", "Data Emissao", "Cliente", "CNPJ/CPF", "Evento",
+         "Valor do Evento", "Valor da NF", "Status", "ID_Unico"],
+        ...r.linhas.map(l => [l.competencia, l.numero, l.emissao, l.cliente, l.doc, l.evento,
+                              l.valorEvento, l.valorNF, l.status, l.idUnico])
+      ] },
     { nome: "Consolidado_Eventos", linhas: [
-        ["Competencia", "Evento", "Qtde Notas", "Qtde Lancamentos", "Valor Total"],
-        ...r.eventos.map(e => [r.comp.label, e.evento, e.qtdNFs, e.qtdLinhas, e.total]),
+        ["Competencia", "Evento", "Qtde Notas", "Total no Mes", "% do Faturado"],
+        ...r.eventos.map(e => [r.comp.label, e.rotulo, e.qtdNotas, e.total,
+                               r.totalServicos ? round2(e.total / r.totalServicos * 100) : ""]),
         [],
-        ["", "TOTAL LANCADO NO CONTROLE", "", "", totalGeral],
-        ["", "TOTAL DAS NOTAS (XML)", "", "", r.totalNF],
-        ["", "DIFERENCA", "", "", round2(totalGeral - r.totalNF)]
+        ["", "SOMA DOS EVENTOS", "", r.totalEventos, ""],
+        ["", "VALOR DOS SERVICOS (XML)", "", r.totalServicos, ""],
+        ["", "DIFERENCA", "", round2(r.totalEventos - r.totalServicos), ""],
+        ["", "VALOR LIQUIDO (XML)", "", r.totalLiquido, ""]
       ] },
     { nome: "Divergencias", linhas: [
-        ["NF", "Cliente", "Ocorrencia", "Valor Total NF", "Soma Rateio", "Diferenca", "Detalhe"],
-        ...r.problemas.map(p => [p.nf, p.cliente, p.status, p.valorNF, p.somaRateio, p.diferenca, p.detalhe])
-      ] },
-    { nome: "Notas", linhas: [
-        ["Modelo", "Numero", "Serie", "Emissao", "Cliente", "CNPJ/CPF", "Valor", "Chave", "Arquivo"],
-        ...ST.nfs.map(n => [n.modelo, n.numero, n.serie, n.emissao, n.cliente, n.doc, round2(n.valor), n.chave, n.arquivo])
+        ["Numero NF", "Cliente", "Ocorrencia", "Valor da NF", "Soma Apurada", "Diferenca", "Detalhe"],
+        ...r.problemas.map(p => [p.nf, p.cliente, p.status, p.valorNF, p.soma, p.diferenca, p.detalhe])
       ] }
-  ]), nomeArquivo("xlsx"));
+  ];
+
+  if (ST.demos.length) {
+    abas.push({ nome: "Demonstrativos", linhas: [
+      ["Numero NF", "Cliente", "Emissao", "Funcionarios", "Centros de Custo", "Sub-Total",
+       "ISS", "Tributo Fiscal", "Total Geral", "Retencoes", "Total Liquido", "Valor da NF (XML)",
+       "Diferenca", "Arquivo"],
+      ...ST.demos.map(d => {
+        const n = r.notas.find(x => x.key === d.nfKey);
+        const vnf = n ? n.nota.valorServicos : 0;
+        return [d.nf, d.cliente, d.emissao, d.funcionarios, d.centros.length, d.subTotal,
+                d.iss, d.tributoFiscal, d.totalGeral, d.retencoes, d.totalLiquido, vnf,
+                round2(d.totalGeral - vnf), d.arquivo];
+      })
+    ] });
+    abas.push({ nome: "Centros_de_Custo", linhas: [
+      ["Numero NF", "Cliente", "C.Custo", "Descricao", "Funcionarios", "Sub-Total",
+       "ISS", "Tributo Fiscal", "Total Geral", "Retencoes", "Total Liquido"],
+      ...ST.demos.flatMap(d => d.centros.map(c => [
+        d.nf, d.cliente, c.codigo, c.descricao, c.funcionarios,
+        round2(c.subTotal || 0), round2(c.iss || 0), round2(c.tributoFiscal || 0),
+        round2(c.totalGeral || 0), round2(c.retencoes || 0), round2(c.totalLiquido || 0)
+      ]))
+    ] });
+    abas.push({ nome: "Verbas_Detalhe", linhas: [
+      ["Numero NF", "Cliente", "Verba", "Valor"],
+      ...ST.demos.flatMap(d => d.eventos.map(e => [d.nf, d.cliente, e.rotulo, e.valor]))
+    ] });
+  }
+
+  baixar(gerarXLSX(abas), nomeArquivo("xlsx"));
   toast("Arquivo .xlsx gerado");
 }
 
 function exportarCSV() {
-  const linhas = [COLS_CONTROLE, ...linhasControle()];
+  const linhas = [colsControle(), ...linhasControle()];
   const csv = linhas.map(l => l.map(c => {
     const s = String(c == null ? "" : c);
     return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
@@ -1259,7 +1421,7 @@ function exportarCSV() {
 }
 
 function copiarLinhas() {
-  const tsv = [COLS_CONTROLE, ...linhasControle()]
+  const tsv = [colsControle(), ...linhasControle()]
     .map(l => l.map(c => String(c == null ? "" : c).replace(/\t/g, " ")).join("\t")).join("\n");
   const ok = () => toast("Linhas copiadas - cole na Controle de Faturamento");
   if (navigator.clipboard && window.isSecureContext) {
@@ -1279,26 +1441,23 @@ function copiarFallback(texto, ok) {
 /* ── inicializacao ──────────────────────────────────────────── */
 
 ligarDrop("drop-xml", "in-xml", receberXML);
-ligarDrop("drop-rat", "in-rat", receberRateio);
+ligarDrop("drop-dem", "in-dem", receberDem);
 
-document.getElementById("f-comp").addEventListener("change", () => {
-  document.getElementById("top-comp").textContent = compAtual().label;
-  ST.res = null; renderConciliacao(); atualizarBotoes();
-});
-document.getElementById("f-tol").addEventListener("change", () => {
-  ST.res = null; renderConciliacao(); atualizarBotoes();
-});
+["f-comp", "f-tol", "f-base"].forEach(id =>
+  document.getElementById(id).addEventListener("change", () => {
+    document.getElementById("top-comp").textContent = compAtual().label;
+    ST.res = null; renderConciliacao(); atualizarBotoes();
+  }));
 
 window.addEventListener("load", () => {
-  if (typeof DecompressionStream === "undefined") {
+  if (typeof DecompressionStream === "undefined")
     document.getElementById("lib-warn").classList.remove("hidden");
-    document.getElementById("in-rat").accept = ".csv,text/csv";
-  }
   atualizarBotoes();
 });
 
 document.getElementById("top-comp").textContent = compAtual().label;
 atualizarBotoes();
+
 </script>
 </body>
 </html>
