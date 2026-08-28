@@ -1920,6 +1920,11 @@ function exportarXLSX() {
         ["Empresa", "Numero NF", "Cliente", "Coluna", "Na planilha", "Calculado pela nota"],
         ...r.planilha.conferencia.map(c => [c.empresa, c.nf, c.cliente, c.coluna, c.naPlanilha, c.calculado])
       ] },
+    { nome: "Clientes_De_Para", linhas: [
+        ["CNPJ/CPF", "Codigo na planilha", "Nome na planilha"],
+        ...Object.keys(ST.dePara || {}).sort().map(doc =>
+          [doc, ST.dePara[doc].codigo, ST.dePara[doc].nome])
+      ] },
     { nome: "Linhas_Repetidas", linhas: [
         ["Empresa|NF", "Cliente", "Valor Bruto", "Observacao"],
         ...r.planilha.duplicadas.map(d => [d.chave, d.cliente, d.valor,
@@ -2031,6 +2036,11 @@ ligarDrop("drop-dem", "in-dem", receberDem);
 window.addEventListener("load", () => {
   if (typeof DecompressionStream === "undefined")
     document.getElementById("lib-warn").classList.remove("hidden");
+  // os codigos de cliente aprendidos em execucoes anteriores voltam sozinhos,
+  // para o mes seguinte nao depender de recarregar a planilha de controle
+  ST.dePara = carregarDePara();
+  const n = Object.keys(ST.dePara).length;
+  if (n) toast(n + " cliente(s) ja conhecidos deste navegador");
   atualizarBotoes();
 });
 

@@ -98,8 +98,9 @@ Solte a sua `CONTROLE_DE_FATURAMENTO_2026.xlsx` no passo 3. A ferramenta:
 
 1. abre a aba da competência (`08.2026`);
 2. **aprende o código de cliente** — ele não existe na nota, então é deduzido cruzando as
-   linhas já lançadas (NF → código) com o XML (NF → CNPJ). O de-para fica salvo no navegador
-   e cresce a cada mês;
+   linhas já lançadas (NF → código) com o XML (NF → CNPJ). O de-para fica salvo no navegador,
+   volta sozinho ao abrir a ferramenta e cresce a cada mês. Ele também sai na aba
+   `Clientes_De_Para` do arquivo gerado, para não ficar preso a um navegador só;
 3. monta as linhas no **layout exato da planilha**, da coluna `Nº` até `PESQUISA`;
 4. preserva as colunas de `Q` em diante (BOLETO, CIDADE CLIENTE, COMERCIAL, ISS…) das linhas
    que já existem — elas são suas, a ferramenta não escreve nelas;
@@ -193,3 +194,15 @@ onde vem cada coluna, edite `MAPA_COLUNAS` e `CAMPOS_CONTROLE` em `faturamento.h
 - `VT/VR` só fecha com os demonstrativos do mês carregados (ver acima).
 - A leitura de `.xlsx` usa `DecompressionStream` (Chrome/Edge 103+, Firefox 113+,
   Safari 16.4+). Em navegador antigo, só o passo 3 fica indisponível.
+
+## Uso incremental
+
+A ferramenta não exige que tudo chegue junto. Cada passo é opcional e o que já dá para
+apurar é apurado:
+
+- **só o XML** → o mês inteiro sai apurado, com os eventos separados nas colunas;
+- **XML + planilha de controle** → as linhas saem no layout dela, com código de cliente;
+- **\+ demonstrativos** → `VT/VR` passa a vir da folha, e as notas sem XML (NDB) ganham linha.
+
+Rodar de novo com mais arquivos não refaz nada: é só soltar e conciliar outra vez. O que a
+ferramenta não consegue justificar ela marca, nunca preenche por conta própria.
