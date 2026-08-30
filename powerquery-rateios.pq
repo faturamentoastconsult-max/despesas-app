@@ -101,3 +101,65 @@ in
 //                  {"Soma",   each List.Sum([Valor]),  type number}})
 // in
 //     Resumo
+
+
+// =====================================================================
+//  CONSULTA 3 — alimenta a aba "NF x Centro de Custo".
+//  Nome: qNFxCentroCusto      Carregar em: tabela nesta pasta
+// =====================================================================
+// let
+//     Agrupado = Table.Group(fRateios, {"MÊS", "NF", "Emp", "Centro de Custo"}, {
+//         {"Folha",           each List.Sum(Table.SelectRows(_, each [Tipo] = "Rubrica")[Valor]) ?? 0, type number},
+//         {"Taxa e tributos", each List.Sum(Table.SelectRows(_, each [Tipo] <> "Rubrica")[Valor]) ?? 0, type number},
+//         {"Total",           each List.Sum([Valor]) ?? 0, type number}}),
+//     Ordenado = Table.Sort(Agrupado, {
+//         {"MÊS", Order.Ascending}, {"NF", Order.Ascending}, {"Centro de Custo", Order.Ascending}})
+// in
+//     Ordenado
+
+
+// =====================================================================
+//  CONSULTA 4 — alimenta a aba "Rubricas".
+//  Os meses viram colunas em ordem crescente, então um mês novo entra
+//  sozinho como coluna nova, e uma rubrica nova como linha nova.
+//  Nome: qRubricaMes          Carregar em: tabela nesta pasta
+// =====================================================================
+// let
+//     Sel    = Table.SelectColumns(fRateios, {"Grupo", "Código", "Rubrica", "MÊS", "Valor"}),
+//     Texto  = Table.TransformColumns(Sel, {{"MÊS", Text.From, type text}}),
+//     Agrup  = Table.Group(Texto, {"Grupo", "Código", "Rubrica", "MÊS"},
+//                  {{"Valor", each List.Sum([Valor]) ?? 0, type number}}),
+//     Meses  = List.Transform(List.Sort(List.Distinct(Agrup[MÊS]), each Number.From(_)), Text.From),
+//     Pivot  = Table.Pivot(Agrup, Meses, "MÊS", "Valor", List.Sum),
+//     SemNulo = Table.ReplaceValue(Pivot, null, 0, Replacer.ReplaceValue, Meses),
+//     ComTotal = Table.AddColumn(SemNulo, "Total",
+//                  each List.Sum(List.Transform(Meses, (m) => Record.Field(_, m))), type number),
+//     Ordenado = Table.Sort(ComTotal, {
+//         {"Grupo", Order.Ascending}, {"Código", Order.Ascending}, {"Rubrica", Order.Ascending}})
+// in
+//     Ordenado
+
+
+// =====================================================================
+//  CONSULTA 5 — conferência: soma calculada x Total Geral do arquivo.
+//  Alimenta as colunas de conferência da aba "Notas Fiscais".
+//  Nome: qConferenciaNF       Carregar em: tabela nesta pasta
+//
+//  Depende de uma variação da consulta principal que NÃO descarta a
+//  coluna "Total Geral" — duplique fRateios, tire "TOTAL GERAL" da
+//  lista Redundantes, chame de fRateios_ComTotal e use abaixo.
+// =====================================================================
+// let
+//     Informado = Table.Group(
+//         Table.SelectRows(fRateios_ComTotal, each [Atributo] = "Total Geral"),
+//         {"NF"}, {{"Total Geral informado", each List.Sum([Valor]) ?? 0, type number}}),
+//     Calculado = Table.Group(fRateios, {"NF"},
+//         {{"Total calculado", each List.Sum([Valor]) ?? 0, type number}}),
+//     Junto = Table.NestedJoin(Calculado, {"NF"}, Informado, {"NF"}, "i", JoinKind.FullOuter),
+//     Aberto = Table.ExpandTableColumn(Junto, "i", {"Total Geral informado"}),
+//     ComDif = Table.AddColumn(Aberto, "Diferença",
+//         each Number.Round(([Total calculado] ?? 0) - ([Total Geral informado] ?? 0), 2), type number),
+//     Situacao = Table.AddColumn(ComDif, "Situação",
+//         each if Number.Abs([Diferença]) < 0.05 then "OK" else "Verificar", type text)
+// in
+//     Situacao
