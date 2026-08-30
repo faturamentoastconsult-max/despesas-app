@@ -113,9 +113,17 @@ in
 //         {"Taxa e tributos", each List.Sum(Table.SelectRows(_, each [Tipo] <> "Rubrica")[Valor]) ?? 0, type number},
 //         {"Total",           each List.Sum([Valor]) ?? 0, type number}}),
 //     Ordenado = Table.Sort(Agrupado, {
-//         {"MÊS", Order.Ascending}, {"NF", Order.Ascending}, {"Centro de Custo", Order.Ascending}})
+//         {"MÊS", Order.Ascending}, {"NF", Order.Ascending}, {"Centro de Custo", Order.Ascending}}),
+//     // numera os centros dentro de cada nota: é a chave que a aba
+//     // "Consulta por NF" usa para montar a distribuição de uma nota só
+//     PorNota = Table.Group(Ordenado, {"NF"}, {{"n", each
+//                   Table.AddIndexColumn(_, "Ordem na nota", 1, 1, Int64.Type), type table}}),
+//     Aberto  = Table.ExpandTableColumn(Table.SelectColumns(PorNota, {"n"}), "n",
+//                   {"MÊS", "NF", "Emp", "Centro de Custo", "Folha", "Taxa e tributos", "Total", "Ordem na nota"}),
+//     ComChave = Table.AddColumn(Aberto, "Chave",
+//                   each [NF] & "|" & Text.From([Ordem na nota]), type text)
 // in
-//     Ordenado
+//     ComChave
 
 
 // =====================================================================
