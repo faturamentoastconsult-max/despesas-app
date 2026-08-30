@@ -83,6 +83,19 @@ select,input[type="search"]{
 #f-nf[aria-invalid="true"]{border-color:var(--crit); color:var(--crit)}
 .linkbtn{font:inherit; font-size:12px; background:none; border:0; color:var(--accent); cursor:pointer; padding:4px 2px; text-decoration:underline; text-underline-offset:2px}
 
+.notice{
+  display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;
+  margin-top:16px; padding:11px 14px; border-radius:9px;
+  background:rgba(250,178,25,.11); border:1px solid rgba(250,178,25,.4);
+  font-size:13px; line-height:1.5; color:var(--ink);
+}
+.notice-ic{
+  flex:none; width:17px; height:17px; border-radius:50%; background:var(--warn);
+  color:#3d2c00; font-size:11px; font-weight:700; line-height:17px; text-align:center;
+  transform:translateY(2px);
+}
+.notice .linkbtn{margin-left:auto; white-space:nowrap}
+
 /* ── cards ────────────────────────────────────────────── */
 .card{background:var(--surface); border:1px solid var(--rule); border-radius:10px; box-shadow:var(--shadow)}
 .card-hd{display:flex; align-items:baseline; justify-content:space-between; gap:14px; padding:14px 18px 0; flex-wrap:wrap}
@@ -208,6 +221,12 @@ pre{background:var(--sunk); border:1px solid var(--rule); border-radius:8px; pad
 </div>
 
 <div class="wrap">
+
+  <div class="notice" id="aviso" hidden>
+    <span class="notice-ic" aria-hidden="true">!</span>
+    <span id="aviso-txt"></span>
+    <button class="linkbtn" id="aviso-btn" type="button">Limpar os outros filtros</button>
+  </div>
 
   <div class="grid hero-row">
     <div class="hero">
@@ -379,14 +398,26 @@ let sortRub = { key:'total', dir:-1 };
 let NFBAIXO = [];      /* nomes de NF em minúsculas, para a busca */
 let NFMATCH = null;    /* Set de índices que casam com a busca, ou null = todas */
 
-/* a busca casa por trecho: "NF_0272" seleciona as duas notas dessa faixa,
-   "205435" acha a nota inteira sem precisar digitar o prefixo */
+/* a busca casa por trecho e ignora separador: "NF 026173", "NF-026173" e
+   "nf/026173" acham NF_026173, e "205435" acha a nota sem digitar o prefixo */
+const chaveNF = t => t.toLowerCase().replace(/[^a-z0-9]/g, '');
 function nfMatches() {
-  const q = S.nf.trim().toLowerCase();
+  const q = chaveNF(S.nf);
   if (!q) return null;
   const s = new Set();
   for (let i = 0; i < NFBAIXO.length; i++) if (NFBAIXO[i].includes(q)) s.add(i);
   return s;
+}
+/* onde as notas buscadas realmente estão, ignorando os demais filtros —
+   é o que permite dizer por que a tela ficou vazia */
+function contextoNF() {
+  if (!NFMATCH || !NFMATCH.size) return null;
+  const meses = new Set(), emps = new Set(), ccs = new Set(), notas = new Set();
+  for (const r of D.fato) {
+    if (!NFMATCH.has(r[3])) continue;
+    meses.add(r[0]); emps.add(r[1]); ccs.add(r[2]); notas.add(r[3]);
+  }
+  return { meses: [...meses].sort((a,b) => a-b), emps, ccs, notas: [...notas] };
 }
 function slice(comNF) {
   const mOK = S.meses.size ? m => S.meses.has(m) : () => true;
@@ -654,9 +685,9 @@ function render() {
   const nMes = A.comDados || 1;
   const vincMed = A.vinc.reduce((a,b)=>a+b,0) / nMes;
   el('k-total').textContent = cmp(A.total);
-  el('k-total-note').textContent =
-    `${nf0.format(A.nfs)} ${A.nfs === 1 ? 'nota fiscal' : 'notas fiscais'} em ${nMes} `
-    + `${nMes === 1 ? 'competência' : 'competências'} · ${brl(A.total)}`;
+  el('k-total-note').textContent = A.nfs === 0 ? 'nenhum lançamento no recorte'
+    : `${nf0.format(A.nfs)} ${A.nfs === 1 ? 'nota fiscal' : 'notas fiscais'} em ${nMes} `
+      + `${nMes === 1 ? 'competência' : 'competências'} · ${brl(A.total)}`;
   el('k-folha').textContent = cmp(folha);
   el('k-folha-d').textContent = `${pct(folha, A.total)} do faturado`;
   el('k-taxa').textContent = cmp(taxa);
@@ -680,6 +711,38 @@ function render() {
     : NFMATCH ? `${nf0.format(A.nfs)} ${A.nfs === 1 ? 'nota' : 'notas'} no recorte`
     : (S.meses.size || S.emp || S.cc) ? `recorte ativo · ${nf0.format(A.nfs)} NF`
     : 'período completo · jan a jul';
+  avisoVazio(A);
+}
+
+/* explica a tela vazia em vez de mostrar uma parede de zeros */
+function avisoVazio(A) {
+  const cx = document.getElementById('aviso'), txt = el('aviso-txt'), btn = el('aviso-btn');
+  if (A.nfs > 0) { cx.hidden = true; return; }
+  let msg = '', mostraBotao = false;
+  if (NFMATCH && NFMATCH.size === 0) {
+    msg = `Nenhuma nota contém “${S.nf.trim()}”. Confira o número — a busca aceita só um `
+        + 'trecho, e não faz diferença usar espaço, hífen ou sublinhado.';
+  } else if (NFMATCH) {
+    const c = contextoNF(), partes = [];
+    if (S.meses.size && !c.meses.some(m => S.meses.has(m)))
+      partes.push(`está em ${c.meses.map(m => MES[m-1]).join(', ')} e o filtro de mês está em `
+        + `${D.meses.filter(m => S.meses.has(m)).map(m => MES[m-1]).join(', ')}`);
+    if (S.emp !== '' && !c.emps.has(+S.emp))
+      partes.push(`não é da empresa ${D.emps[+S.emp]}`);
+    if (S.cc !== '' && !c.ccs.has(+S.cc))
+      partes.push(`não passa pelo centro ${D.ccs[+S.cc]}`);
+    const nome = c.notas.length === 1 ? `A nota ${D.nfs[c.notas[0]]}` : `Nenhuma das ${c.notas.length} notas encontradas`;
+    msg = partes.length
+      ? `${nome} ${partes.join(', e ')}. Por isso a tela zerou.`
+      : `${nome} não tem lançamento no recorte atual.`;
+    mostraBotao = partes.length > 0;
+  } else if (S.meses.size || S.emp || S.cc) {
+    msg = 'Nenhum lançamento neste recorte.';
+    mostraBotao = true;
+  } else { cx.hidden = true; return; }
+  txt.textContent = msg;
+  btn.hidden = !mostraBotao;
+  cx.hidden = false;
 }
 
 /* ── controls ──────────────────────────────────────────────────── */
@@ -708,7 +771,7 @@ function boot() {
     const o = document.createElement('option'); o.value = i; o.textContent = `${D.emps[i]} — ${cmp(v)}`; el('f-emp').appendChild(o); });
   [...ccTot.entries()].sort((a,b)=>b[1]-a[1]).forEach(([i,v]) => {
     const o = document.createElement('option'); o.value = i; o.textContent = D.ccs[i]; el('f-cc').appendChild(o); });
-  NFBAIXO = D.nfs.map(n => n.toLowerCase());
+  NFBAIXO = D.nfs.map(chaveNF);
   const dl = el('dl-nf');
   for (const n of D.nfs) { const o = document.createElement('option'); o.value = n; dl.appendChild(o); }
   let tnf;
@@ -724,6 +787,12 @@ function boot() {
     render();
   });
   el('q-rub').addEventListener('input', () => LAST && tblRub(LAST));
+  el('aviso-btn').addEventListener('click', () => {
+    S.meses.clear(); S.emp = ''; S.cc = '';
+    el('f-emp').value = ''; el('f-cc').value = '';
+    fm.querySelectorAll('.chip').forEach(b => b.setAttribute('aria-pressed','false'));
+    render();
+  });
 
   el('lg-comp').innerHTML = D.grupos.map((n,g) =>
     `<span class="lg"><span class="sw" style="background:${css(SER[g])}"></span>${n}</span>`).join('');
