@@ -216,6 +216,7 @@ pre{background:var(--sunk); border:1px solid var(--rule); border-radius:8px; pad
       <datalist id="dl-nf"></datalist>
     </div>
     <button class="linkbtn" id="f-reset" type="button">Limpar filtros</button>
+    <button class="linkbtn" id="f-baixar" type="button" hidden>Baixar o recorte (.csv)</button>
     <span class="flabel" id="f-status" style="margin-left:auto"></span>
   </div>
 </div>
@@ -674,6 +675,57 @@ function tblRub(A) {
   }));
 }
 
+/* ── exportação ────────────────────────────────────────────────── */
+let DL = null;
+const csvQuote = t => /[;"\r\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+const csvNum = v => v.toFixed(2).replace('.', ',');   /* Excel pt-BR */
+
+/* uma linha por mês × nota × centro de custo × rubrica — o formato plano
+   que entra direto numa tabela dinâmica */
+function csvRecorte() {
+  const f = slice(true), meses = new Set(activeMonths());
+  const cab = ['Mês','Competência','NF','Empresa','Centro de custo','Grupo','Código','Rubrica','Valor'];
+  const linhas = ['sep=;', cab.join(';')];
+  for (const r of D.fato) {
+    if (!meses.has(r[0]) || !f(r)) continue;
+    const att = D.atts[r[4]], temCod = /^\d{3}/.test(att);
+    linhas.push([
+      r[0], `01/${String(r[0]).padStart(2,'0')}/2026`, D.nfs[r[3]], D.emps[r[1]], D.ccs[r[2]],
+      D.grupos[r[5]], temCod ? att.slice(0,3) : '', temCod ? att.slice(4) : att, csvNum(r[6]),
+    ].map(x => csvQuote(String(x))).join(';'));
+  }
+  return { texto: '\ufeff' + linhas.join('\r\n'), linhas: linhas.length - 2 };
+}
+function nomeArquivo() {
+  const p = ['rateios-ftd-2026'];
+  if (NFMATCH && NFMATCH.size === 1) p.push([...NFMATCH].map(i => D.nfs[i])[0]);
+  else if (S.nf.trim()) p.push('notas-' + S.nf.trim());
+  if (S.meses.size) p.push(D.meses.filter(m => S.meses.has(m)).map(m => MES[m-1]).join('-'));
+  if (S.emp !== '') p.push('emp' + D.emps[+S.emp]);
+  if (S.cc !== '') p.push((D.ccs[+S.cc].match(/^\d+/) || ['cc'])[0]);
+  return p.join('_').replace(/[^\w.-]+/g, '-') + '.csv';
+}
+async function baixar() {
+  const btn = el('f-baixar'), rotulo = btn.textContent;
+  const { texto, linhas } = csvRecorte();
+  if (!linhas) { btn.textContent = 'nada no recorte'; setTimeout(() => btn.textContent = rotulo, 2200); return; }
+  btn.disabled = true; btn.textContent = 'preparando…';
+  try {
+    await DL.save({ filename: nomeArquivo(), data: texto });
+    btn.textContent = `${nf0.format(linhas)} linhas salvas`;
+  } catch (e) {
+    const c = e && e.code;
+    btn.textContent = c === 'declined' ? 'cancelado'
+      : c === 'rate_limited' ? 'aguarde um instante'
+      : c === 'too_large' ? 'recorte grande demais — filtre antes'
+      : 'não foi possível salvar';
+    if (c === 'unavailable' || c === 'not_granted' || c === 'capability_removed') { btn.hidden = true; return; }
+  } finally {
+    btn.disabled = false;
+    setTimeout(() => btn.textContent = rotulo, 3000);
+  }
+}
+
 /* ── render ────────────────────────────────────────────────────── */
 let LAST = null;
 function render() {
@@ -811,6 +863,16 @@ function boot() {
     <div><span class="pill ${f.s}">${f.tag}</span><h3>${f.t}</h3><p>${f.p}</p></div></div>`).join('');
   el('steps').innerHTML = STEPS.map(s => `<div class="card step"><div><h3>${s.t}</h3><p>${s.p}</p>${s.code
     ? `<details><summary>${s.summary}</summary><pre>${s.code}</pre></details>` : ''}</div></div>`).join('');
+
+  el('f-baixar').addEventListener('click', baixar);
+  /* o botão só aparece se este visualizador souber salvar arquivo */
+  (async () => {
+    try {
+      if (typeof window.claude?.use !== 'function') return;
+      DL = await window.claude.use('downloads');
+      if (DL) el('f-baixar').hidden = false;
+    } catch (_) { /* segue sem exportação */ }
+  })();
 
   render();
   let t; new ResizeObserver(() => { clearTimeout(t); t = setTimeout(render, 90); }).observe(el('h-comp'));
