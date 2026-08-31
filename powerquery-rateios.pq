@@ -171,3 +171,19 @@ in
 //         each if Number.Abs([Diferença]) < 0.05 then "OK" else "Verificar", type text)
 // in
 //     Situacao
+
+
+// =====================================================================
+//  CONSULTA 6 — alimenta a aba "NF x Grupo".
+//  É o que permite entregar ao cliente uma pasta sem a aba de detalhe:
+//  o segundo quadro da Consulta por NF lê daqui, não das 80 mil linhas.
+//  Nome: qNFxGrupo            Carregar em: tabela nesta pasta
+// =====================================================================
+// let
+//     Agrupado = Table.Group(fRateios, {"MÊS", "NF", "Grupo"},
+//                    {{"Valor", each List.Sum([Valor]) ?? 0, type number}}),
+//     SemZero  = Table.SelectRows(Agrupado, each Number.Round([Valor], 2) <> 0),
+//     Ordenado = Table.Sort(SemZero, {
+//         {"MÊS", Order.Ascending}, {"NF", Order.Ascending}, {"Grupo", Order.Ascending}})
+// in
+//     Ordenado
