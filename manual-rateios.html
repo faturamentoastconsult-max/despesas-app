@@ -1,0 +1,305 @@
+<title>Manual dos Rateios FTD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --plane:#f2f2ed; --surface:#fbfbf9; --surface-2:#f6f6f1; --sunk:#eceae3;
+  --ink:#15171c; --ink-2:#54574f; --muted:#8a8d85;
+  --rule:#e0dfd6; --rule-2:#cfcec3;
+  --accent:#184f95; --accent-soft:#e6eefa; --accent-ink:#123b71;
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
+  --ledger:rgba(27,175,122,.055);
+  --shadow:0 1px 0 rgba(21,23,28,.04), 0 1px 3px rgba(21,23,28,.05);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  color-scheme: dark;
+  --plane:#0d0e10; --surface:#16171a; --surface-2:#1c1e21; --sunk:#111214;
+  --ink:#f0f1ec; --ink-2:#b6b9b1; --muted:#84877f;
+  --rule:#2a2c30; --rule-2:#3a3d42;
+  --accent:#7fb0f0; --accent-soft:#182a41; --accent-ink:#a8c9f7;
+  --good:#0ca30c; --warn:#fab219; --crit:#e07a7a;
+  --ledger:rgba(25,158,112,.09);
+  --shadow:0 1px 0 rgba(0,0,0,.3), 0 1px 3px rgba(0,0,0,.35);
+}}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --plane:#0d0e10; --surface:#16171a; --surface-2:#1c1e21; --sunk:#111214;
+  --ink:#f0f1ec; --ink-2:#b6b9b1; --muted:#84877f;
+  --rule:#2a2c30; --rule-2:#3a3d42;
+  --accent:#7fb0f0; --accent-soft:#182a41; --accent-ink:#a8c9f7;
+  --good:#0ca30c; --warn:#fab219; --crit:#e07a7a;
+  --ledger:rgba(25,158,112,.09);
+  --shadow:0 1px 0 rgba(0,0,0,.3), 0 1px 3px rgba(0,0,0,.35);
+}
+*,*::before,*::after{box-sizing:border-box}
+body{background:var(--plane); color:var(--ink); margin:0;
+  font-family:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif; font-size:14px; line-height:1.5;
+  -webkit-font-smoothing:antialiased;}
+.mono{font-family:'IBM Plex Mono',ui-monospace,Menlo,monospace}
+code{font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:.9em; overflow-wrap:anywhere; background:var(--sunk);
+  padding:1px 5px; border-radius:4px; border:1px solid var(--rule)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:3px}
+
+.wrap{max-width:900px; margin:0 auto; padding:0 22px 80px}
+.masthead{border-bottom:1px solid var(--rule); background:var(--surface)}
+.masthead-in{max-width:900px; margin:0 auto; padding:26px 22px}
+.eyebrow{font-size:10.5px; font-weight:600; letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
+h1{font-size:27px; font-weight:700; letter-spacing:-.02em; margin:5px 0 0; text-wrap:balance}
+.lede{font-family:'Source Sans 3',sans-serif; font-size:16px; line-height:1.6; color:var(--ink-2);
+  margin:10px 0 0; max-width:64ch}
+
+h2{font-size:19px; font-weight:700; letter-spacing:-.018em; margin:0; text-wrap:balance}
+.sec{margin-top:44px}
+.sec-hd{display:flex; align-items:baseline; gap:12px; padding-bottom:10px; border-bottom:2px solid var(--ink);
+  margin-bottom:18px; flex-wrap:wrap}
+.sec-n{font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:var(--accent)}
+.sec-note{font-size:12.5px; color:var(--muted); margin-left:auto}
+p{font-family:'Source Sans 3',sans-serif; font-size:15px; line-height:1.65; color:var(--ink-2);
+  margin:0 0 14px; max-width:70ch}
+p strong,li strong{color:var(--ink); font-weight:600}
+
+.card{background:var(--surface); border:1px solid var(--rule); border-radius:10px; box-shadow:var(--shadow);
+  padding:16px 18px; margin-bottom:12px}
+.cards{display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.cards > *{min-width:0}
+.card h3{font-size:14px; font-weight:600; margin:0 0 6px; letter-spacing:-.008em}
+.card p{font-size:13.5px; margin:0}
+.card .sz{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--muted); display:block; margin-top:7px}
+
+ol.steps{list-style:none; counter-reset:st; padding:0; margin:0; display:grid;
+  grid-template-columns:minmax(0,1fr); gap:12px}
+ol.steps > li{counter-increment:st; min-width:0; background:var(--surface); border:1px solid var(--rule);
+  border-radius:10px; box-shadow:var(--shadow); padding:16px 18px 16px 56px; position:relative}
+ol.steps > li::before{content:counter(st,decimal-leading-zero); position:absolute; left:18px; top:16px;
+  font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:var(--accent)}
+ol.steps h3{font-size:14.5px; font-weight:600; margin:0 0 6px; letter-spacing:-.008em}
+ol.steps p:last-child{margin-bottom:0}
+.path{font-family:'IBM Plex Mono',monospace; font-size:12px; background:var(--sunk); border:1px solid var(--rule);
+  border-radius:6px; padding:8px 10px; margin:8px 0 0; display:block; overflow-x:auto; white-space:nowrap; color:var(--ink)}
+
+.scroll{overflow-x:auto; border:1px solid var(--rule); border-radius:10px; background:var(--surface);
+  box-shadow:var(--shadow); margin-bottom:14px}
+table{border-collapse:collapse; width:100%; font-size:13px}
+th,td{padding:9px 12px; text-align:left; vertical-align:top}
+thead th{font-size:10.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--muted);
+  border-bottom:1px solid var(--rule-2); white-space:nowrap}
+tbody tr:nth-child(even){background:var(--ledger)}
+tbody td{border-bottom:1px solid var(--rule)}
+tbody tr:last-child td{border-bottom:0}
+td.nw{white-space:nowrap}
+
+.chk{display:grid; grid-template-columns:minmax(0,1fr); gap:10px; margin:0; padding:0; list-style:none}
+.chk li{min-width:0}
+.chk li{background:var(--surface); border:1px solid var(--rule); border-radius:10px; box-shadow:var(--shadow);
+  padding:14px 16px 14px 46px; position:relative}
+.chk li::before{content:''; position:absolute; left:16px; top:16px; width:15px; height:15px;
+  border:2px solid var(--rule-2); border-radius:4px}
+.chk h3{font-size:14px; font-weight:600; margin:0 0 5px}
+.chk p{font-size:13.5px; margin:0}
+
+.pend{border-left:3px solid var(--warn)}
+.pend.c{border-left-color:var(--crit)}
+.pill{display:inline-block; font-size:10.5px; font-weight:600; letter-spacing:.07em; text-transform:uppercase;
+  padding:2px 8px; border-radius:20px; margin-bottom:7px; background:rgba(250,178,25,.16); color:#8a6000}
+.pill.c{background:rgba(208,59,59,.13); color:var(--crit)}
+:root[data-theme="dark"] .pill{color:var(--warn)}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .pill{color:var(--warn)} }
+
+.callout{background:var(--accent-soft); border:1px solid transparent; border-radius:10px; padding:14px 16px;
+  margin-bottom:14px}
+.callout p{color:var(--accent-ink); margin:0}
+.callout p + p{margin-top:9px}
+a{color:var(--accent); text-underline-offset:2px}
+.foot{margin-top:48px; padding-top:16px; border-top:1px solid var(--rule); font-size:12.5px; color:var(--muted);
+  font-family:'Source Sans 3',sans-serif}
+@media (max-width:600px){ h1{font-size:22px} .masthead-in{padding:20px 18px} .wrap{padding:0 18px 60px}
+  ol.steps > li{padding-left:18px; padding-top:38px} ol.steps > li::before{top:14px} }
+@media print{ body{background:#fff} .card,ol.steps>li,.chk li,.scroll{box-shadow:none} .sec{break-inside:avoid} }
+</style>
+<header class="masthead">
+  <div class="masthead-in">
+    <div class="eyebrow">Steintemp &rarr; FTD &middot; consolidado de rateios</div>
+    <h1>Manual dos Rateios FTD</h1>
+    <p class="lede">A montagem que falta fazer uma vez, a rotina de todo mês, e o que olhar antes de mandar para o cliente. Os números citados são os de janeiro a julho de 2026.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section class="sec">
+  <div class="sec-hd"><span class="sec-n">00</span><h2>O que você tem em mãos</h2></div>
+  <div class="cards">
+    <div class="card">
+      <h3>Rateios_FTD_2026.xlsx</h3>
+      <p>A sua cópia de trabalho. 13 abas, incluindo o detalhe linha a linha por rubrica e pessoa.</p>
+      <span class="sz">7,8 MB &middot; 80.546 linhas de detalhe</span>
+    </div>
+    <div class="card">
+      <h3>Rateios_FTD_2026_cliente.xlsx</h3>
+      <p>A que vai para a FTD. Mesmas contas, sem a aba de detalhe. É o arquivo que substitui o de hoje no drive.</p>
+      <span class="sz">1,9 MB &middot; 12 abas</span>
+    </div>
+    <div class="card">
+      <h3>powerquery-rateios.pq</h3>
+      <p>As oito consultas em texto, prontas para colar no Editor Avançado. É o motor — sem ele a pasta não se atualiza sozinha.</p>
+      <span class="sz">8 consultas</span>
+    </div>
+    <div class="card">
+      <h3>Painel na web</h3>
+      <p>Leitura rápida com filtro por mês, empresa, centro de custo e nota, e botão para baixar o recorte em CSV.</p>
+      <span class="sz">privado na sua conta</span>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="sec-hd"><span class="sec-n">01</span><h2>Montagem</h2><span class="sec-note">uma vez só &middot; ~40 min</span></div>
+  <p>Enquanto este bloco não for feito, a pasta tem os dados de janeiro a julho <strong>parados</strong>: os números estão certos, mas não se atualizam. Faça tudo na <strong>sua cópia</strong>, nunca na do cliente.</p>
+
+  <ol class="steps">
+    <li>
+      <h3>Corrigir o caminho da pasta</h3>
+      <p>Abra o <code>powerquery-rateios.pq</code> no Bloco de Notas. Na consulta 1, troque a linha <code>PastaOrigem</code> pelo endereço da pasta no SharePoint, não pelo <code>C:\Users\…</code> — é isso que faz a atualização funcionar em qualquer máquina.</p>
+      <span class="path">PastaOrigem = "https://aststein-my.sharepoint.com/.../FTD CONSOLIDADA/2026",</span>
+    </li>
+    <li>
+      <h3>Colar a consulta principal</h3>
+      <p>No Excel: <strong>Dados &rsaquo; Obter Dados &rsaquo; De Outras Fontes &rsaquo; Consulta em Branco</strong>. No editor que abrir, <strong>Página Inicial &rsaquo; Editor Avançado</strong>, apague o conteúdo e cole a consulta 1 inteira. Renomeie a consulta para <code>fRateios</code> no painel da direita.</p>
+    </li>
+    <li>
+      <h3>Esvaziar a aba antes de ligar cada consulta</h3>
+      <p>As abas de saída hoje têm valores gravados. Antes de carregar a consulta correspondente, selecione da <strong>linha 5 até o fim</strong> daquela aba e exclua as linhas. Não mexa nas linhas 1 a 4 — são o título e o cabeçalho.</p>
+    </li>
+    <li>
+      <h3>Carregar cada consulta na aba dela</h3>
+      <p>No editor, <strong>Página Inicial &rsaquo; Fechar e Carregar Para…</strong> e escolha <strong>Tabela &rsaquo; Planilha Existente</strong>, apontando para a célula <code>A4</code> da aba certa. Repita para as seis consultas de saída, uma por vez.</p>
+    </li>
+    <li>
+      <h3>Conferir a ordem das colunas</h3>
+      <p>As abas de fórmula procuram os valores <strong>pela letra da coluna</strong>. Se a consulta devolver as colunas em outra ordem, as contas apontam para o lugar errado — e erram sem dar erro. Compare com a tabela abaixo antes de seguir.</p>
+    </li>
+    <li>
+      <h3>Fechar a conta</h3>
+      <p>Vá ao <strong>Resumo</strong>. O total tem que continuar em <strong>R$ 33.092.189,11</strong>, com 624 notas e 88 centros. Se bater, a montagem está certa. Salve.</p>
+    </li>
+  </ol>
+
+  <div class="scroll" style="margin-top:16px">
+    <table>
+      <thead><tr><th>Consulta</th><th>Vai para a aba</th><th>Ordem das colunas que ela precisa devolver</th></tr></thead>
+      <tbody>
+        <tr><td class="nw mono">fRateios</td><td class="nw">Rateios</td><td>NF · Competência · MÊS · Emp · Fil · Cod · CPF · Nome · Função · Vínculo · Admissão · Demissão · Salário (R$) · Taxa Fat · Período Bnf · C.Custo · Centro de Custo · Código · Rubrica · Grupo · Tipo · Valor</td></tr>
+        <tr><td class="nw mono">qNFxCentroCusto</td><td class="nw">NF x Centro de Custo</td><td>Mês · Competência · NF · Empresa · Centro de Custo · Folha · Taxa e tributos · Total · Ordem na nota · Chave</td></tr>
+        <tr><td class="nw mono">qNFxGrupo</td><td class="nw">NF x Grupo</td><td>Mês · NF · Grupo · Valor</td></tr>
+        <tr><td class="nw mono">qRubricaMes</td><td class="nw">Rubricas</td><td>Grupo · Código · Rubrica · um por mês, em ordem · Total</td></tr>
+        <tr><td class="nw mono">qColaboradores</td><td class="nw">Colaboradores</td><td>Ano · Competência · Mês · NF · Emp · Fil · Cod · CPF · Nome · Função · Vínculo · Centro de Custo · Salário (R$) · Admissão · Demissão · Taxa Fat · os sete grupos, na ordem do Resumo · Total</td></tr>
+        <tr><td class="nw mono">qConsolidado</td><td class="nw">Consolidado</td><td>Ano · Competência · Mês · NF · Emp · Centro de Custo · Código · Rubrica · Grupo · Tipo · Valor</td></tr>
+        <tr><td class="nw mono">qRateios_NaoClassificado</td><td class="nw">(criar aba nova)</td><td>É a consulta 2, de auditoria. Carregue numa aba pequena e nova. Se ela vier vazia, o mês está limpo.</td></tr>
+        <tr><td class="nw mono">qConferenciaNF</td><td class="nw">(opcional)</td><td>É a consulta 5. Alimenta a coluna <em>Total Geral informado</em> da aba Notas Fiscais, hoje preenchida com valores fixos. Enquanto não ligar, essa coluna não se atualiza sozinha.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <p><strong>Uma escolha a fazer no passo 4.</strong> Para as consultas <code>fRateios</code>, <code>qNFxCentroCusto</code>, <code>qNFxGrupo</code> e <code>qRubricaMes</code>, marque também <strong>Adicionar ao Modelo de Dados</strong> se quiser montar as tabelas dinâmicas depois. Para as demais, tabela na planilha basta.</p>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="sec-hd"><span class="sec-n">02</span><h2>A rotina do mês</h2><span class="sec-note">~10 min</span></div>
+  <ol class="steps">
+    <li>
+      <h3>Salvar os rateios novos na pasta do ano</h3>
+      <p>Um arquivo por nota, <strong>com o nome da nota</strong> — o nome do arquivo vira o número da NF na base. Cabeçalho na primeira linha da primeira aba. Rubrica nova pode vir: entra sozinha.</p>
+      <p><strong>Padronize o nome.</strong> Hoje convivem <code>NF_026598</code> e <code>NF_25687</code>, um com zero à frente e outro sem. Escolha um formato e mantenha — é o que faz a busca por nota funcionar.</p>
+    </li>
+    <li>
+      <h3>Atualizar</h3>
+      <p>Abra a sua cópia e vá em <strong>Dados &rsaquo; Atualizar Tudo</strong>. Espere terminar antes de olhar qualquer número.</p>
+    </li>
+    <li>
+      <h3>Rodar as quatro conferências</h3>
+      <p>São as do bloco 03. Enquanto alguma acusar, não envie: é mais barato achar agora do que depois que o cliente faturou.</p>
+    </li>
+    <li>
+      <h3>Gerar a cópia do cliente</h3>
+      <p><strong>Arquivo &rsaquo; Salvar Como</strong> com o nome do cliente, e nessa cópia clique com o botão direito na aba <strong>Rateios</strong> &rsaquo; <strong>Excluir</strong>. É essa aba que responde por 96% do peso do arquivo, e é a única com CPF, nome e salário linha a linha.</p>
+    </li>
+    <li>
+      <h3>Substituir o arquivo no drive</h3>
+      <p>Sobrescreva o que está lá, mantendo o mesmo nome e o mesmo endereço — assim quem já tem o link não precisa de nada novo.</p>
+    </li>
+  </ol>
+</section>
+
+<section class="sec">
+  <div class="sec-hd"><span class="sec-n">03</span><h2>As quatro conferências</h2><span class="sec-note">antes de enviar</span></div>
+  <p>Cada uma existe porque um erro real passou por ali. As quatro juntas levam dois minutos.</p>
+  <ul class="chk">
+    <li>
+      <h3>Situação, na aba Notas Fiscais</h3>
+      <p>Filtre a coluna <strong>Situação</strong> por “Verificar”. Ela compara o total calculado com o <span class="mono">Total Geral</span> que veio no arquivo de origem. Hoje acusa duas notas, ambas conhecidas — qualquer terceira é nova e precisa de olhada.</p>
+    </li>
+    <li>
+      <h3>Não listado, no fim das abas Centro de Custo e Notas Fiscais</h3>
+      <p>É a última linha antes do total, com fundo amarelo. Compara o total da origem com a soma das linhas listadas acima. <strong>Tem que ser zero.</strong> Diferente de zero significa que apareceu um centro ou uma nota que ainda não está na lista da aba — acrescente a linha e copie a fórmula da linha de cima.</p>
+    </li>
+    <li>
+      <h3>A aba de auditoria</h3>
+      <p>A consulta <span class="mono">qRateios_NaoClassificado</span> junta tudo que a leitura não reconheceu: coluna nova, cabeçalho fora do lugar, verba com formato estranho. <strong>Vazia é o esperado.</strong> Se vier alguma coisa, é dado que não entrou em lugar nenhum.</p>
+    </li>
+    <li>
+      <h3>Os três totais da Consulta por NF</h3>
+      <p>Escolha qualquer nota grande. A soma dos centros, a soma dos grupos e o Total calculado do quadro de cima têm que dar o <strong>mesmo valor</strong>. É o teste mais rápido de que a montagem continua de pé.</p>
+    </li>
+  </ul>
+</section>
+
+<section class="sec">
+  <div class="sec-hd"><span class="sec-n">04</span><h2>Quando acontecer</h2></div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Situação</th><th>O que fazer</th></tr></thead>
+      <tbody>
+        <tr><td class="nw"><strong>Rubrica nova</strong></td><td>Nada. A consulta reconhece qualquer verba que comece com três dígitos e ela entra sozinha. Só confira o grupo dela na aba <strong>dRubricas</strong> — se ficou no grupo errado, corrija a célula azul.</td></tr>
+        <tr><td class="nw"><strong>Centro de custo novo</strong></td><td>Entra sozinho nas abas de consulta. Na aba <strong>Centro de Custo</strong>, que é de fórmula, acrescente a linha e copie a fórmula ao lado — a linha “Não listado” avisa quando isso é necessário.</td></tr>
+        <tr><td class="nw"><strong>Uma nota não fecha</strong></td><td>Abra a <strong>Consulta por NF</strong> e escolha a nota. Compare Folha e Taxa contra o arquivo de origem. Normalmente é rubrica que não veio no arquivo, não erro de conta.</td></tr>
+        <tr><td class="nw"><strong>Colaborador sem CPF</strong></td><td>Aparece como <span class="mono">(em branco na origem)</span> na aba Colaboradores, não some. Vale corrigir no cadastro de origem.</td></tr>
+        <tr><td class="nw"><strong>Mês novo na aba Rubricas ou Centro de Custo</strong></td><td>Essas duas têm um mês por coluna. Copie a última coluna de mês para a direita e ajuste a chave do mês na linha 3 (Centro de Custo). Uma dinâmica faria isso sozinha — é a razão de existir a opção do bloco 05.</td></tr>
+        <tr><td class="nw"><strong>Virada de ano</strong></td><td>Pasta nova <code>2027</code> e troque as duas primeiras linhas da consulta 1: <code>PastaOrigem</code> e <code>ArquivoConsolidado</code>. Nada mais.</td></tr>
+        <tr><td class="nw"><strong>O cliente quer o detalhe de um caso</strong></td><td>Não mande a aba inteira. Abra o painel, filtre a nota e use <strong>Baixar o recorte (.csv)</strong>.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="sec-hd"><span class="sec-n">05</span><h2>Pendências de hoje</h2><span class="sec-note">nada foi corrigido sozinho</span></div>
+  <div class="cards">
+    <div class="card pend c">
+      <span class="pill c">Conferir na origem</span>
+      <h3>Duas notas não fecham</h3>
+      <p><span class="mono">NF_027199</span> divergindo <strong>−R$ 462.395,54</strong> e <span class="mono">NF_027200</span>, <strong>−R$ 542,00</strong>. Na primeira, o arquivo de origem só tem a linha de tributo: as rubricas de folha não vieram.</p>
+    </div>
+    <div class="card pend">
+      <span class="pill">Decisão de cadastro</span>
+      <h3>11 centros sem código</h3>
+      <p><strong>R$ 503.929,82</strong>, 1,5% do período. Três — <span class="mono">ROTATIVA NOITE</span>, <span class="mono">ROTATIVA DIA</span> e <span class="mono">ACABAMENTO NOITE</span> — já existem com código e estão duplicando o centro no rateio. Estão em vermelho na aba dCentroCusto.</p>
+    </div>
+    <div class="card pend">
+      <span class="pill">Cadastro</span>
+      <h3>Um colaborador sem CPF</h3>
+      <p><span class="mono">NF_205461</span>, R$ 61,00. Já aparece marcado na aba Colaboradores, mas o certo é corrigir na origem.</p>
+    </div>
+    <div class="card pend">
+      <span class="pill">Quando quiser</span>
+      <h3>As tabelas dinâmicas</h3>
+      <p>Com a base no Modelo de Dados, cinco dinâmicas cobrem o que as abas de fórmula fazem — e ganham mês e centro novos sem você mexer em coluna nenhuma. O passo a passo está na aba <strong>Leia-me</strong> da pasta.</p>
+    </div>
+  </div>
+</section>
+
+<p class="foot">Manual da pasta consolidada de rateios, período de janeiro a julho de 2026: 624 notas, 88 centros de custo, 92 rubricas, R$ 33.092.189,11. Os arquivos, o código das consultas e o histórico das mudanças estão no branch <span class="mono">claude/consolidado-rateios-dashboard-44xsy4</span>.</p>
+</div>
