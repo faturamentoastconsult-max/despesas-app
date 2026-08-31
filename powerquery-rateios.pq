@@ -32,7 +32,20 @@ let
     LerRateio = (Conteudo as binary, NomeArquivo as text) as table =>
         let
             Livro    = Excel.Workbook(Conteudo, true, true),
-            Planilha = Table.SelectRows(Livro, each [Kind] = "Sheet"){0}[Data],
+            Abas     = Table.SelectRows(Livro, each [Kind] = "Sheet"),
+            // Escolhe a aba que REALMENTE tem as colunas de identificação, em vez
+            // da primeira. Assim uma aba de instruções ou de capa no arquivo de
+            // origem não quebra a leitura — e um arquivo sem nenhuma aba válida
+            // acusa com o nome do arquivo, em vez de trazer lixo calado.
+            Candidatas = Table.AddIndexColumn(
+                             Table.AddColumn(Abas, "Chaves encontradas", each
+                                 List.Count(List.Intersect({Chaves, Table.ColumnNames([Data])})),
+                                 Int64.Type), "Ordem", 0, 1, Int64.Type),
+            Ranking  = Table.Sort(Candidatas, {{"Chaves encontradas", Order.Descending},
+                                               {"Ordem", Order.Ascending}}),
+            Planilha = if Table.RowCount(Ranking) = 0 or Ranking{0}[Chaves encontradas] < 3
+                       then error "O arquivo " & NomeArquivo & " não tem nenhuma aba com as colunas de identificação do rateio."
+                       else Ranking{0}[Data],
             Nomes    = Table.ColumnNames(Planilha),
             SemLixo  = Table.RemoveColumns(Planilha, List.Select(Nomes, each EhRedundante(_))),
             ChavesAqui = List.Intersect({Chaves, Table.ColumnNames(SemLixo)}),

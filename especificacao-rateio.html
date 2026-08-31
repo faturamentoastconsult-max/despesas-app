@@ -1,0 +1,268 @@
+<title>Especificação do Rateio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --plane:#f2f2ed; --surface:#fbfbf9; --surface-2:#f6f6f1; --sunk:#eceae3;
+  --ink:#15171c; --ink-2:#54574f; --muted:#8a8d85;
+  --rule:#e0dfd6; --rule-2:#cfcec3;
+  --accent:#184f95; --accent-soft:#e6eefa; --accent-ink:#123b71;
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
+  --ledger:rgba(27,175,122,.055);
+  --shadow:0 1px 0 rgba(21,23,28,.04), 0 1px 3px rgba(21,23,28,.05);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  color-scheme: dark;
+  --plane:#0d0e10; --surface:#16171a; --surface-2:#1c1e21; --sunk:#111214;
+  --ink:#f0f1ec; --ink-2:#b6b9b1; --muted:#84877f;
+  --rule:#2a2c30; --rule-2:#3a3d42;
+  --accent:#7fb0f0; --accent-soft:#182a41; --accent-ink:#a8c9f7;
+  --good:#0ca30c; --warn:#fab219; --crit:#e07a7a;
+  --ledger:rgba(25,158,112,.09);
+  --shadow:0 1px 0 rgba(0,0,0,.3), 0 1px 3px rgba(0,0,0,.35);
+}}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --plane:#0d0e10; --surface:#16171a; --surface-2:#1c1e21; --sunk:#111214;
+  --ink:#f0f1ec; --ink-2:#b6b9b1; --muted:#84877f;
+  --rule:#2a2c30; --rule-2:#3a3d42;
+  --accent:#7fb0f0; --accent-soft:#182a41; --accent-ink:#a8c9f7;
+  --good:#0ca30c; --warn:#fab219; --crit:#e07a7a;
+  --ledger:rgba(25,158,112,.09);
+  --shadow:0 1px 0 rgba(0,0,0,.3), 0 1px 3px rgba(0,0,0,.35);
+}
+*,*::before,*::after{box-sizing:border-box}
+body{background:var(--plane); color:var(--ink); margin:0;
+  font-family:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif; font-size:14px; line-height:1.5;
+  -webkit-font-smoothing:antialiased;}
+.mono{font-family:'IBM Plex Mono',ui-monospace,Menlo,monospace}
+code{font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:.9em; overflow-wrap:anywhere; background:var(--sunk);
+  padding:1px 5px; border-radius:4px; border:1px solid var(--rule)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:3px}
+
+.wrap{max-width:900px; margin:0 auto; padding:0 22px 80px}
+.masthead{border-bottom:1px solid var(--rule); background:var(--surface)}
+.masthead-in{max-width:900px; margin:0 auto; padding:26px 22px}
+.eyebrow{font-size:10.5px; font-weight:600; letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
+h1{font-size:27px; font-weight:700; letter-spacing:-.02em; margin:5px 0 0; text-wrap:balance}
+.lede{font-family:'Source Sans 3',sans-serif; font-size:16px; line-height:1.6; color:var(--ink-2);
+  margin:10px 0 0; max-width:64ch}
+
+h2{font-size:19px; font-weight:700; letter-spacing:-.018em; margin:0; text-wrap:balance}
+.sec{margin-top:44px}
+.sec-hd{display:flex; align-items:baseline; gap:12px; padding-bottom:10px; border-bottom:2px solid var(--ink);
+  margin-bottom:18px; flex-wrap:wrap}
+.sec-n{font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:var(--accent)}
+.sec-note{font-size:12.5px; color:var(--muted); margin-left:auto}
+p{font-family:'Source Sans 3',sans-serif; font-size:15px; line-height:1.65; color:var(--ink-2);
+  margin:0 0 14px; max-width:70ch}
+p strong,li strong{color:var(--ink); font-weight:600}
+
+.card{background:var(--surface); border:1px solid var(--rule); border-radius:10px; box-shadow:var(--shadow);
+  padding:16px 18px; margin-bottom:12px}
+.cards{display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.cards > *{min-width:0}
+.card h3{font-size:14px; font-weight:600; margin:0 0 6px; letter-spacing:-.008em}
+.card p{font-size:13.5px; margin:0}
+.card .sz{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--muted); display:block; margin-top:7px}
+
+ol.steps{list-style:none; counter-reset:st; padding:0; margin:0; display:grid;
+  grid-template-columns:minmax(0,1fr); gap:12px}
+ol.steps > li{counter-increment:st; min-width:0; background:var(--surface); border:1px solid var(--rule);
+  border-radius:10px; box-shadow:var(--shadow); padding:16px 18px 16px 56px; position:relative}
+ol.steps > li::before{content:counter(st,decimal-leading-zero); position:absolute; left:18px; top:16px;
+  font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:var(--accent)}
+ol.steps h3{font-size:14.5px; font-weight:600; margin:0 0 6px; letter-spacing:-.008em}
+ol.steps p:last-child{margin-bottom:0}
+.path{font-family:'IBM Plex Mono',monospace; font-size:12px; background:var(--sunk); border:1px solid var(--rule);
+  border-radius:6px; padding:8px 10px; margin:8px 0 0; display:block; overflow-x:auto; white-space:nowrap; color:var(--ink)}
+
+.scroll{overflow-x:auto; border:1px solid var(--rule); border-radius:10px; background:var(--surface);
+  box-shadow:var(--shadow); margin-bottom:14px}
+table{border-collapse:collapse; width:100%; font-size:13px}
+th,td{padding:9px 12px; text-align:left; vertical-align:top}
+thead th{font-size:10.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--muted);
+  border-bottom:1px solid var(--rule-2); white-space:nowrap}
+tbody tr:nth-child(even){background:var(--ledger)}
+tbody td{border-bottom:1px solid var(--rule)}
+tbody tr:last-child td{border-bottom:0}
+td.nw{white-space:nowrap}
+
+.chk{display:grid; grid-template-columns:minmax(0,1fr); gap:10px; margin:0; padding:0; list-style:none}
+.chk li{min-width:0}
+.chk li{background:var(--surface); border:1px solid var(--rule); border-radius:10px; box-shadow:var(--shadow);
+  padding:14px 16px 14px 46px; position:relative}
+.chk li::before{content:''; position:absolute; left:16px; top:16px; width:15px; height:15px;
+  border:2px solid var(--rule-2); border-radius:4px}
+.chk h3{font-size:14px; font-weight:600; margin:0 0 5px}
+.chk p{font-size:13.5px; margin:0}
+
+.pend{border-left:3px solid var(--warn)}
+.pend.c{border-left-color:var(--crit)}
+.pill{display:inline-block; font-size:10.5px; font-weight:600; letter-spacing:.07em; text-transform:uppercase;
+  padding:2px 8px; border-radius:20px; margin-bottom:7px; background:rgba(250,178,25,.16); color:#8a6000}
+.pill.c{background:rgba(208,59,59,.13); color:var(--crit)}
+:root[data-theme="dark"] .pill{color:var(--warn)}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .pill{color:var(--warn)} }
+
+.callout{background:var(--accent-soft); border:1px solid transparent; border-radius:10px; padding:14px 16px;
+  margin-bottom:14px}
+.callout p{color:var(--accent-ink); margin:0}
+.callout p + p{margin-top:9px}
+a{color:var(--accent); text-underline-offset:2px}
+.foot{margin-top:48px; padding-top:16px; border-top:1px solid var(--rule); font-size:12.5px; color:var(--muted);
+  font-family:'Source Sans 3',sans-serif}
+@media (max-width:600px){ h1{font-size:22px} .masthead-in{padding:20px 18px} .wrap{padding:0 18px 60px}
+  ol.steps > li{padding-left:18px; padding-top:38px} ol.steps > li::before{top:14px} }
+/* matriz de quem faz o quê */
+.mtx td.man{color:var(--crit); font-weight:600; white-space:nowrap}
+.mtx td.aut{color:var(--good); font-weight:600; white-space:nowrap}
+.mtx td.par{color:var(--ink-2); white-space:nowrap}
+.mtx th.lvl{text-align:center}
+.mtx td:not(:first-child){text-align:center}
+
+/* níveis */
+.lvl-hd{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:4px}
+.lvl-hd h3{font-size:16px; font-weight:700; margin:0; letter-spacing:-.012em}
+.tag{font-size:10.5px; font-weight:600; letter-spacing:.07em; text-transform:uppercase;
+  padding:2px 8px; border-radius:20px; background:var(--sunk); color:var(--ink-2)}
+.tag.ok{background:rgba(12,163,12,.13); color:#06710a}
+.tag.mid{background:rgba(250,178,25,.16); color:#8a6000}
+:root[data-theme="dark"] .tag.ok{color:var(--good)} :root[data-theme="dark"] .tag.mid{color:var(--warn)}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .tag.ok{color:var(--good)}
+  :root:not([data-theme="light"]) .tag.mid{color:var(--warn)} }
+.lvl{background:var(--surface); border:1px solid var(--rule); border-radius:10px; box-shadow:var(--shadow);
+  padding:18px 20px; margin-bottom:14px}
+.lvl > p:last-child{margin-bottom:0}
+.gains{display:grid; gap:8px; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); margin:12px 0 0}
+.gains > *{min-width:0}
+.gain{font-family:'Source Sans 3',sans-serif; font-size:13.5px; line-height:1.5; color:var(--ink-2);
+  padding-left:20px; position:relative}
+.gain::before{content:'+'; position:absolute; left:0; top:-1px; color:var(--good); font-weight:700;
+  font-family:'IBM Plex Mono',monospace}
+.gain.no::before{content:'−'; color:var(--crit)}
+pre{background:var(--sunk); border:1px solid var(--rule); border-radius:8px; padding:13px 15px;
+  overflow-x:auto; font-family:'IBM Plex Mono',monospace; font-size:11.5px; line-height:1.6;
+  margin:12px 0 0; color:var(--ink)}
+
+@media print{ body{background:#fff} .card,ol.steps>li,.chk li,.scroll,.lvl{box-shadow:none} .sec{break-inside:avoid} }
+</style>
+<header class="masthead">
+  <div class="masthead-in">
+    <div class="eyebrow">Steintemp &rarr; FTD &middot; consolidado de rateios</div>
+    <h1>Especificação do Rateio</h1>
+    <p class="lede">O formato que o sistema de folha precisa gravar na pasta para o consolidado ler sem ninguém no meio. Este documento e o arquivo <span class="mono">MODELO_Rateio_NF.xlsx</span> são o que você encaminha para quem configura a exportação.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section class="sec">
+  <div class="sec-hd"><span class="sec-n">00</span><h2>O que entregar</h2></div>
+  <div class="cards">
+    <div class="card">
+      <h3>MODELO_Rateio_NF.xlsx</h3>
+      <p>A aba <strong>RATEIO</strong> tem o cabeçalho com todas as colunas e duas linhas de exemplo, coloridas por tipo: azul é identificação, verde é verba, âmbar é total. A aba <strong>LEIA-ME</strong> repete as regras dentro do próprio arquivo, para não depender deste link.</p>
+      <span class="sz">28 colunas &middot; 2 linhas de exemplo</span>
+    </div>
+    <div class="card">
+      <h3>Este documento</h3>
+      <p>As regras, o que pode variar, e o roteiro para testar antes de virar a chave. Escrito para ser lido por quem não conhece o consolidado.</p>
+      <span class="sz">leitura de 5 minutos</span>
+    </div>
+  </div>
+  <div class="callout">
+    <p><strong>Conferi o modelo contra a consulta antes de te entregar.</strong> Passei o arquivo pela mesma leitura que o consolidado faz: as 28 colunas foram reconhecidas, nenhuma caiu na fila de auditoria, e as duas linhas de exemplo fecham contra o Total Geral que elas mesmas declaram. O formato não é uma proposta — é o que já funciona.</p>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="sec-hd"><span class="sec-n">01</span><h2>As três regras que não podem falhar</h2></div>
+  <ol class="steps">
+    <li>
+      <h3>O nome do arquivo vira o número da nota</h3>
+      <p>Não existe coluna de NF: a leitura tira o número do <strong>nome do arquivo</strong>. <code>NF_026174.xlsx</code> produz a nota <code>NF_026174</code>. Um arquivo por nota.</p>
+      <p><strong>Escolha um formato e nunca mude.</strong> Hoje a base tem <code>NF_026598</code> e <code>NF_25687</code> convivendo — um com zero à frente e seis dígitos, outro com cinco. Isso já atrapalhou busca por nota uma vez. Combine agora a quantidade de dígitos e o prefixo.</p>
+    </li>
+    <li>
+      <h3>O cabeçalho na primeira linha</h3>
+      <p>Os nomes das colunas na linha 1 da aba de dados. Sem título, logotipo, data de emissão ou linha em branco acima. Oito registros da base atual têm o rótulo da coluna gravado como se fosse valor — todos vieram de arquivos onde o cabeçalho estava mais abaixo.</p>
+    </li>
+    <li>
+      <h3>Os nomes das colunas de identificação, exatos</h3>
+      <p>As 15 colunas azuis do modelo têm que vir com o nome idêntico, <strong>com acento e maiúscula</strong>: <code>MÊS</code> e não <code>MES</code>, <code>C.Custo (Descrição)</code> e não <code>Centro de Custo</code>. É por esses nomes que a leitura separa cadastro de verba — o que ela não reconhece como identificação, ela trata como verba.</p>
+    </li>
+  </ol>
+</section>
+
+<section class="sec">
+  <div class="sec-hd"><span class="sec-n">02</span><h2>O que pode variar, e o que não</h2></div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Item</th><th>Regra</th></tr></thead>
+      <tbody>
+        <tr><td class="nw"><strong>Colunas de verba</strong></td><td>Quantas forem, e diferentes de uma nota para outra. Verba nova entra sozinha, desde que o nome comece com <strong>três dígitos e um hífen</strong> — <code>284-PAGTO DE VALE ALIMENTACAO</code>. Sem os três dígitos, ela cai na fila de auditoria em vez de entrar.</td></tr>
+        <tr><td class="nw"><strong>Ordem das colunas</strong></td><td>Livre. A leitura procura pelo nome, nunca pela posição.</td></tr>
+        <tr><td class="nw"><strong>Linhas</strong></td><td>Uma por colaborador, quantas forem. A maior nota de hoje tem 20 centros de custo e algumas centenas de linhas.</td></tr>
+        <tr><td class="nw"><strong>Abas</strong></td><td>Pode ter capa, instruções, o que quiser. A leitura procura a aba que tem as colunas de identificação — e acusa com o nome do arquivo se nenhuma tiver.</td></tr>
+        <tr><td class="nw"><strong>Formato</strong></td><td><code>.xlsx</code>, <code>.xlsm</code> ou <code>.xls</code>. Se o sistema só exportar CSV ou TXT, dá para adaptar — me diga o separador e a codificação.</td></tr>
+        <tr><td class="nw"><strong>Coluna repetida</strong></td><td>Não mande <code>NOME</code>, <code>CENTRO DE CUSTO</code> ou <code>VALOR</code> duplicando o que já está na identificação. São descartadas, e a presença delas costuma indicar cabeçalho fora do lugar.</td></tr>
+        <tr><td class="nw"><strong>Célula mesclada</strong></td><td>Nunca no cabeçalho. Mesclagem quebra a leitura das colunas.</td></tr>
+        <tr><td class="nw"><strong>Número como texto</strong></td><td>Valor tem que chegar número. O campo Salário hoje vem como <code>"1.707,00 / M"</code>, que é texto e precisa ser tratado depois — se o sistema puder mandar só o número, melhor.</td></tr>
+        <tr><td class="nw"><strong>CPF em branco</strong></td><td>Vira pendência de cadastro. Já aconteceu com dois lançamentos, R$ 61,00 — não somem, mas ficam marcados como “(em branco na origem)”.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="sec-hd"><span class="sec-n">03</span><h2>Total Geral</h2><span class="sec-note">mande sempre</span></div>
+  <p>É a soma de todas as verbas mais Taxa e Tributo Fiscal, na própria linha. Parece redundante — o consolidado sabe somar — e é exatamente por isso que ele importa.</p>
+  <p>O consolidado <strong>recalcula esse total pelas verbas e compara com o que veio no arquivo</strong>. Bateu, a nota está íntegra. Não bateu, ela é sinalizada antes de chegar ao cliente. Foi assim que apareceram as duas notas que hoje divergem em R$ 462 mil e R$ 542 — numa delas, as linhas de folha simplesmente não foram exportadas, e sem esse campo ninguém teria percebido.</p>
+  <div class="callout">
+    <p><strong>Se o sistema não conseguir calcular o Total Geral,</strong> avise em vez de mandar zero ou deixar em branco: zero seria lido como divergência em toda nota, e a conferência perderia o sentido por excesso de alarme. Nesse caso eu troco a conferência por outra.</p>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="sec-hd"><span class="sec-n">04</span><h2>Como testar antes de virar a chave</h2><span class="sec-note">não ligue direto em produção</span></div>
+  <ol class="steps">
+    <li>
+      <h3>Peça um arquivo de teste numa pasta separada</h3>
+      <p>Crie uma pasta <code>…/FTD CONSOLIDADA/TESTE</code> e peça ao sistema para gravar <strong>uma nota real do mês passado</strong> lá, no formato novo. Uma nota só, e das grandes — nota grande exercita mais casos.</p>
+    </li>
+    <li>
+      <h3>Aponte uma cópia do consolidado para essa pasta</h3>
+      <p>Duplique a sua pasta de trabalho, troque a linha <code>PastaOrigem</code> da consulta 1 para a pasta de teste e atualize. Não mexa na pasta boa.</p>
+    </li>
+    <li>
+      <h3>Olhe a fila de auditoria primeiro</h3>
+      <p>A consulta <span class="mono">qRateios_NaoClassificado</span> mostra tudo que a leitura não reconheceu. <strong>Vazia é o esperado.</strong> Se aparecer coluna ali, é nome de verba fora do padrão ou coluna de identificação escrita diferente — e é bem mais barato consertar agora.</p>
+    </li>
+    <li>
+      <h3>Compare a nota contra o arquivo antigo</h3>
+      <p>Abra a <strong>Consulta por NF</strong> e escolha a nota de teste. O total tem que dar o mesmo do arquivo que veio pelo caminho antigo, e a Situação tem que estar OK. Se bater ao centavo, o formato está certo.</p>
+    </li>
+    <li>
+      <h3>Rode um mês em paralelo</h3>
+      <p>No primeiro fechamento, deixe o sistema gravar na pasta de teste e continue salvando à mão na pasta boa. Compare os dois consolidados no fim. Só depois desse mês desligue o caminho manual.</p>
+    </li>
+  </ol>
+</section>
+
+<section class="sec">
+  <div class="sec-hd"><span class="sec-n">05</span><h2>Como fica o seu mês depois disso</h2></div>
+  <p>Com o sistema gravando direto e o script agendado ligado, some a única etapa que ainda dependia de alguém lembrar. O que sobra é o que deveria mesmo sobrar:</p>
+  <div class="gains">
+    <div class="gain">O sistema grava o rateio na pasta</div>
+    <div class="gain">O script atualiza, confere e publica</div>
+    <div class="gain">Você lê o log — ou o e-mail, se algo acusou</div>
+    <div class="gain no">Você decide sobre nota que não fecha, centro sem código e grupo de verba nova</div>
+  </div>
+  <p style="margin-top:18px">De cinco etapas manuais por mês para uma leitura de log e as decisões que só você pode tomar. É onde o seu tempo vale, e é o único lugar do processo onde ele deveria estar.</p>
+</section>
+
+<p class="foot">Complemento do <strong>Manual dos Rateios FTD</strong> e da <strong>Automação dos Rateios</strong>. O modelo, as oito consultas e o script de atualização estão no branch <span class="mono">claude/consolidado-rateios-dashboard-44xsy4</span>. A consulta 1 foi ajustada nesta entrega para escolher a aba pelo conteúdo, e não pela posição — é o que permite ao arquivo de origem ter a aba LEIA-ME sem quebrar a leitura.</p>
+</div>
