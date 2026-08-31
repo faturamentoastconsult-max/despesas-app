@@ -187,3 +187,52 @@ in
 //         {"MÊS", Order.Ascending}, {"NF", Order.Ascending}, {"Grupo", Order.Ascending}})
 // in
 //     Ordenado
+
+
+// =====================================================================
+//  CONSULTA 7 — alimenta a aba "Colaboradores".
+//  A visão de sempre, consolidada: uma linha por colaborador em cada
+//  nota e centro de custo, com as verbas somadas por grupo.
+//  Nome: qColaboradores       Carregar em: tabela nesta pasta
+// =====================================================================
+// let
+//     Chaves = {"MÊS", "NF", "Emp", "Fil", "Cod", "CPF", "Nome", "Função",
+//               "Vínculo", "Centro de Custo"},
+//     // chave em branco viraria linha perdida no pivot: marca em vez de descartar
+//     SemNulo = Table.ReplaceValue(fRateios, null, "(em branco na origem)",
+//                   Replacer.ReplaceValue, List.RemoveItems(Chaves, {"MÊS"})),
+//     Agrupado = Table.Group(SemNulo, Chaves & {"Grupo"}, {
+//                    {"Valor", each List.Sum([Valor]) ?? 0, type number},
+//                    {"Salário (R$)", each List.First([#"Salário (R$)"]), type number},
+//                    {"Admissão", each List.First([Admissão]), type date},
+//                    {"Demissão", each List.First([Demissão]), type date},
+//                    {"Taxa Fat", each List.First([Taxa Fat]), type number}}),
+//     Grupos = {"Salário e horas normais", "Horas extras e adicionais", "Encargos e provisões",
+//               "Benefícios", "EPI, exames e diversos", "Descontos", "Taxa e tributos"},
+//     Pivot  = Table.Pivot(Agrupado, Grupos, "Grupo", "Valor", List.Sum),
+//     Zeros  = Table.ReplaceValue(Pivot, null, 0, Replacer.ReplaceValue, Grupos),
+//     Total  = Table.AddColumn(Zeros, "Total",
+//                  each List.Sum(List.Transform(Grupos, (g) => Record.Field(_, g))), type number),
+//     Ordenado = Table.Sort(Total, {
+//         {"MÊS", Order.Ascending}, {"NF", Order.Ascending},
+//         {"Centro de Custo", Order.Ascending}, {"Nome", Order.Ascending}})
+// in
+//     Ordenado
+
+
+// =====================================================================
+//  CONSULTA 8 — alimenta a aba "Consolidado".
+//  Uma linha por rubrica em cada nota, centro de custo e competência.
+//  Nome: qConsolidado         Carregar em: tabela nesta pasta
+// =====================================================================
+// let
+//     Agrupado = Table.Group(fRateios,
+//                    {"MÊS", "NF", "Emp", "Centro de Custo", "Código", "Rubrica", "Grupo", "Tipo"},
+//                    {{"Valor", each List.Sum([Valor]) ?? 0, type number}}),
+//     SemZero  = Table.SelectRows(Agrupado, each Number.Round([Valor], 2) <> 0),
+//     Ordenado = Table.Sort(SemZero, {
+//         {"MÊS", Order.Ascending}, {"NF", Order.Ascending},
+//         {"Centro de Custo", Order.Ascending}, {"Código", Order.Ascending},
+//         {"Rubrica", Order.Ascending}})
+// in
+//     Ordenado
