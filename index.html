@@ -435,7 +435,7 @@ const CONFIG = {
 
   // COLE AQUI A URL DO SEU APPS SCRIPT WEB APP
   // Ex: "https://script.google.com/macros/s/XXXXXX/exec"
-  SHEETS_URL: "https://script.google.com/macros/s/AKfycbxzXe-EieYb2_nVJoYdYXl2uaoRnZjcDW7HEeqPbpgm9xMwT4Ynx78a-jBiGAKWETBE/exec",
+  SHEETS_URL: "https://script.google.com/macros/s/https://script.google.com/macros/s/AKfycbx0rJ9SkuIvf3cga2FoyCXZQVBC6yxrIzCjPX_eEwPMsdVgKxjPbA9Ktbb__gNJSW47/exec",
 
   // Nome da empresa (aparece no topo)
   EMPRESA: "Minha Empresa",
@@ -1528,9 +1528,6 @@ function removerAnexo() {
   });
 }
 
-// ── CLOUDINARY CONFIG ──────────────────────────────────────
-const CLOUDINARY_CLOUD_NAME = "db0pe4o4z";
-const CLOUDINARY_UPLOAD_PRESET = "recibos_upload";
 
 async function uploadAnexo(reciboId) {
   if(!ST.anexoFile) return "";
